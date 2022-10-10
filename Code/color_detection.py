@@ -18,8 +18,8 @@ colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,1
 classes = ["Ball", "Team1", "Team2"] 
 
 # defining the webcams properties
-#camera = cv2.VideoCapture(1)
-camera = cv2. VideoCapture("../OpenCV/Video/1080p/60fps/20220923_200827.MOV")
+camera = cv2.VideoCapture(0)
+#camera = cv2. VideoCapture("../OpenCV/Video/1080p/60fps/20220923_200827.MOV")
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth
 camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width
 camera.set(cv2.CAP_PROP_FPS, 240) #FPS
