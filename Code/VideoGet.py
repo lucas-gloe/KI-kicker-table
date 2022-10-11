@@ -9,9 +9,9 @@ class VideoGet:
 
     def __init__(self, src=0):
         self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width
-        #self.stream.set(cv2.CAP_PROP_FPS, 240) #FPS
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth of the frame
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width of the frame
+        self.stream.set(cv2.CAP_PROP_FPS, 60) #FPS output from camera
 
         (self.grabbed, self.frame) = self.stream.read()
 

@@ -2,6 +2,7 @@ import cv2
 from datetime import datetime
 from KalmanFilter import KalmanFilter
 import numpy as np
+import keyboard
 
 
 class Game:
@@ -14,10 +15,21 @@ class Game:
         self._num_occurrences = 0
         self.current_ball_position = None
         self.ball_positions = []
-        self.colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
+        self.colors = [[0, 95, 134, 9, 144, 234], [0, 167, 165, 23, 255, 255], [102, 66, 111 ,120, 255, 255]] #HSV
+        #self.colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
         self.kf = KalmanFilter()
+        self.ranked = [[],[]]
         self.player1_figures = []
         self.player2_figures = []
+        self.predicted = (0,0)
+        self.counterTeam1 = 0
+        self.counterTeam2 = 0
+        self.ballOutOfGame = True
+        self.goal1detected = False
+        self.goal2detected = False
+        self.results = True
+        self.gameResults= [[0,0]]
+        self.showContour = False
 
     def start(self):
         self._start_time = datetime.now()
@@ -34,35 +46,30 @@ class Game:
         self._num_occurrences += 1
         hsvimg = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         self.trackBall(hsvimg)
-        self.player1_figures = self.trackPlayers(1, hsvimg)
-        self.player2_figures = self.trackPlayers(2, hsvimg)
+        self.player1_figures = self.trackPlayers(1, 0, hsvimg)
+        self.player2_figures = self.trackPlayers(2, 1, hsvimg)
+        
+        #track game stats
+        self.countGamescore() 
+        self.detectBallReentering()
+        self.resetGame()
         
 
         # Draw results in frame
         self.putIterationsPerSec(frame, self.countsPerSec())
         self.drawContourOnKicker(frame)
         self.drawBall(frame)
+        self.drawPredictedBall(frame)
         self.drawFigures(frame, self.player1_figures, team=1)
         self.drawFigures(frame, self.player2_figures, team=2)
+        self.showGameScore(frame)
+        self.showLastGames(frame)
 
         return frame
 
 #################################### FUNCTIONS FOR INTERPRETATION ###########################
 
-    def putIterationsPerSec(self, tracked_frame, iterations_per_sec):
-        """
-        Add iterations per second text to lower-left corner of a frame.
-        """
-
-        cv2.putText(tracked_frame, "{:.0f} iterations/sec".format(iterations_per_sec),(50, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
-
-            
-    def drawContourOnKicker(self, frame):
-        """
-        Add football field contour for calibration on frame
-        """
-        cv2.rectangle(frame,(180,55),(1110,570),(0,255,0),2) #field
-
+####################################  TRACKING ##############################################
 
     def trackBall(self, hsvimg):
         mask = cv2.inRange(hsvimg, np.array(self.colors[0][0:3]), np.array(self.colors[0][3:6]))
@@ -80,6 +87,8 @@ class Game:
             # save the current position of the ball into an array
             self.current_ball_position = [centerX,centerY]
 
+            self.predicted = self.kf.predict(centerX, centerY)
+
         elif(len(objects) == 0):
             print("Ball nicht erkannt")
             self.current_ball_position = [-1,-1]
@@ -89,11 +98,14 @@ class Game:
 
         self.ball_positions.append(self.current_ball_position)
 
-    def trackPlayers(self, team_number, hsvimg):
+    def trackPlayers(self, team_number, teamrank, hsvimg):
         player_positions = []
         mask = cv2.inRange(hsvimg, np.array(self.colors[team_number][0:3]), np.array(self.colors[team_number][3:6]))
         objects = self.findObjects(mask)
         if(len(objects) >= 1):
+            self.ranked[teamrank] = self.loadPlayersNames(objects)
+            # if teamrank == 1:
+            #    self.ranked[teamrank] = self.ranked[teamrank][::-1]
             for contour in objects:
                 x = contour[0]
                 y = contour[1]
@@ -102,69 +114,10 @@ class Game:
 
                 current_player_position = [x,y,w,h]
                 player_positions.append(current_player_position)
-
-                ranked = self.loadPlayersNames(player_positions)
-                return ranked
+            return player_positions
             
         elif(len(objects) == 0):
             print("Spieler nicht erkannt")   
-
-
-    # def computeObjectTracking(self, frame):
-    #     """
-    #     mark every contour which should be tracked on the image based on their colour
-    #     Return: marked image
-    #     """
-    #     # converting rgb to hsv shema
-    #     hsvimg = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    #     # looping over every color to track to define the masks
-    #     for color in self.colors:
-    #         mask = cv2.inRange(hsvimg, np.array(color[0:3]), np.array(color[3:6]))
-
-    #         # finding every object on the masks
-    #         #cv2.imshow(str(color), mask)
-    #         objects = self.findObjects(mask)
-    #         #filter players for their positions
-
-    #         if color == self.colors[1] or color == self.colors[2]:
-    #             # looping over every contour witch where found on the masks	
-    #             players_names = self.loadPlayersNames(objects)
-    #         for i, contour in enumerate(objects):
-    #             x = contour[0]
-    #             y = contour[1]
-    #             w = contour[2]
-    #             h = contour[3]
-    #             # name the given contour 
-    #             if color == self.colors[0]:
-    #                 #defing the centerpoints for the case the detected contour is the ball
-    #                 centerX = int((x+(w/2)))
-    #                 centerY = int((y+(h/2)))
-                
-    #                 # save the current position of the ball into an array
-    #                 self.current_ball_position = [centerX,centerY]
-                    
-    #                     # save the current position of the ball together with his last view positions
-    #                 ballPositions.append(currentBallPosition)
-                    
-    #                     # predict the next centerpoints of the ball in case the ball is under a figure in the next frame
-    #                 predicted = kf.predict(centerX, centerY)
-
-    #             if color == self.colors[1]:
-    #                 # draw a rectangle for the players of team 1
-    #                 ObjectTracking.drawPlayer("Team1", players_names[i] ,w ,h , x, y, trackedFrame)
-
-    #             if color == self.colors[2]:
-    #                 # draw a rectangle for the players of team 2
-    #                 ObjectTracking.drawPlayer("Team2", players_names[i], w, h, x, y, trackedFrame)
-
-    #         # if no circle was drawn on the videostream draw the estimated position of the ball from the last frame 
-    #         if color == colors[0] and len(objects) == 0:
-    #             # if no contour was found in the mask of the ball draw the estimated position of the ball from the last frame 
-    #             ballPositions.append([-1,-1])
-    #             cv2.circle(trackedFrame,(predicted[0], predicted[1]), 16 ,(0,255,0),2)
-
-    #     return predicted, ballPositions
 
     def findObjects(self, mask):
         """
@@ -202,6 +155,60 @@ class Game:
             ranks[sortedValuetMatrix] = np.arange(len(valuetMatrix))
             return ranks
 
+##################################### GAME STATS ##############################################################
+
+    def countGamescore(self):
+        if len(self.ball_positions) > 1 and 0 < self.ball_positions[-2][0] < 250 and 430 < self.ball_positions[-2][1] < 670 and self.ball_positions[-1] == [-1,-1] and self.ballOutOfGame:
+            self.goal1detected = True
+            self.goalInCurrentFrame = True
+
+        if len(self.ball_positions) > 1 and self.ball_positions[-2][0] > 1600 and 430 < self.ball_positions[-2][1] < 660 and self.ball_positions[-1] == [-1,-1] and self.ballOutOfGame:
+            self.goal2detected = True
+            self.goalInCurrentFrame = True
+
+        if self.goal1detected and self.goalInCurrentFrame:
+            self.counterTeam1 += 1
+            self.ballOutOfGame = False
+        if self.goal2detected and self.goalInCurrentFrame:
+            self.counterTeam2 += 1
+            self.ballOutOfGame = False
+
+    def detectBallReentering(self):
+        if self.goal1detected or self.goal2detected:
+            if 700 < self.ball_positions[-1][0] < 1270 and self.ball_positions[-2] == [-1,-1]:
+                self.goal1detected = False
+                self.goal2detected = False
+                self.results = True
+                self.ballOutOfGame = True
+    
+    def resetGame(self):
+        if keyboard.is_pressed("n") and self.results:
+            self.gameResults.append([self.counterTeam1, self.counterTeam2])
+            self.counterTeam1 = 0
+            self.counterTeam2 = 0
+            self.results = False
+
+#####################################  PRINTING ON FRAME ######################################################
+    def putIterationsPerSec(self, tracked_frame, iterations_per_sec):
+        """
+        Add iterations per second text to lower-left corner of a frame.
+        """
+        cv2.putText(tracked_frame, "{:.0f} iterations/sec".format(iterations_per_sec),(50, 600), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
+
+    def drawContourOnKicker(self, frame):
+            """
+            Add football field contour for calibration on frame
+            """
+            if keyboard.is_pressed("c"):
+                self.showContour = True
+            if self.showContour:
+                cv2.rectangle(frame,(320,180),(1620,920),(0,255,0),2) #field
+                #cv2.rectangle(frame,(250,430),(340,670),(0,255,0),2) #goal1
+                #cv2.rectangle(frame,(1600,430),(1690,660),(0,255,0),2) #goal2
+                #cv2.rectangle(frame,(700,180),(1270,920),(0,255,0),2) #einwurf
+                if keyboard.is_pressed("f"):
+                    self.showContour = False
+
     def drawBall(self, frame):
         """
         Draw a cicle at the balls position and name the Object "ball"
@@ -211,11 +218,26 @@ class Game:
             cv2.circle(frame,(self.current_ball_position[0], self.current_ball_position[1]), 16 ,(0,255,0),2)
             cv2.putText(frame,"Ball", (self.current_ball_position[0], self.current_ball_position[1]) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
 
+    def drawPredictedBall(self, frame):
+        if(self.current_ball_position == [-1,-1]):
+            cv2.circle(frame,(self.predicted[0], self.predicted[1]), 16 ,(0,255,255),2)
+
     def drawFigures(self, frame, player_positions, team):
         """
-        Draw a rectangle at the players posioion and name it TeamX
+        Draw a rectangle at the players position and name it TeamX
         """
         if player_positions:
             for i, player_position in enumerate(player_positions):
                 cv2.rectangle(frame,(player_position[0],player_position[1]),(player_position[0]+player_position[2],player_position[1]+player_position[3]),(0,255,0),2)
-                cv2.putText(frame,("Team" + team + ", " + i), (player_position[0],player_position[1]) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
+                cv2.putText(frame,("Team" + str(team) + ", " + str(self.ranked[team-1][i])), (player_position[0],player_position[1]) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
+    
+    def showGameScore(self, frame):
+        cv2.putText(frame,(str(self.counterTeam1) + " : " + str(self.counterTeam2)), (1700, 800) ,cv2.FONT_HERSHEY_PLAIN , 2 , (30, 144, 255), 2)
+
+    def showLastGames(self, frame):
+        cv2.putText(frame,("Last Games"), (1700, 200) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
+        cv2.putText(frame,(str(self.gameResults[-1][0]) + " : " + str(self.gameResults[-1][1])), (1700, 220) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
+        if len(self.gameResults)>2:
+            cv2.putText(frame,(str(self.gameResults[-2][0]) + " : " + str(self.gameResults[-2][1])), (1700, 240) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
+        if len(self.gameResults)>3:
+            cv2.putText(frame,(str(self.gameResults[-3][0]) + " : " + str(self.gameResults[-3][1])), (1700, 260) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2) 

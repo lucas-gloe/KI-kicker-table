@@ -12,7 +12,7 @@ def main():
     VideoShow objects/threads.
     """
 
-    video_getter = VideoGet(0).start()
+    video_getter = VideoGet(1).start()
     video_shower = VideoShow(video_getter.frame).start()
     game = Game().start()
 

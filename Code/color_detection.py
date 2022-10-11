@@ -18,7 +18,7 @@ colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,1
 classes = ["Ball", "Team1", "Team2"] 
 
 # defining the webcams properties
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(1)
 #camera = cv2. VideoCapture("../OpenCV/Video/1080p/60fps/20220923_200827.MOV")
 camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth
 camera.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width
@@ -284,8 +284,6 @@ def main():
 
 	# defining classes names
 	kf = KalmanFilter()
-	prev_frame_time = 0
-	new_frame_time = 0
 
 	# loop over every frame from the camera and perform the tracking
 	while True:
@@ -315,8 +313,8 @@ def main():
 		# detect if ball reenters the field
 		goal1detected, goal2detected, results, ballOutOfGame = detectBallReentering(goal1detected, goal2detected, ballPositions, results, ballOutOfGame)        
 
-		fps = 1/(new_frame_time-prev_frame_time)
-		prev_frame_time = new_frame_time
+		#fps = 1/(new_frame_time-prev_frame_time)
+		#prev_frame_time = new_frame_time
 		#print(fps)
 
 
