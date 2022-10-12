@@ -1,7 +1,6 @@
-import cv2
-from VideoGet import VideoGet
-from VideoShow import VideoShow
-from Game import Game
+from video_get import VideoGet
+from video_show import VideoShow
+from game import Game
 
 
 def main():
@@ -12,9 +11,9 @@ def main():
     VideoShow objects/threads.
     """
 
-    video_getter = VideoGet(1).start()
+    video_getter = VideoGet(VideoGet.DEFAULT_CAM).start()
     video_shower = VideoShow(video_getter.frame).start()
-    game = Game().start()
+    game = Game().start()  
 
     while True:
         if video_getter.stopped or video_shower.stopped:
@@ -25,7 +24,7 @@ def main():
         frame = video_getter.frame
         #tracked_frame = frame.copy()
         #putIterationsPerSec(tracked_frame, cps.countsPerSec())
-        frame = game.interpretFrame(frame)
+        frame = game.interpret_frame(frame)
 
         video_shower.frame = frame
         #cps.increment()
