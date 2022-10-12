@@ -57,6 +57,7 @@ class Game:
         self._count_gamescore() 
         self._detect_ball_reentering()
         self._reset_game()
+        self._ball_speed_tracking()
         
         out_frame = frame.copy()
 
@@ -129,7 +130,7 @@ class Game:
         mask = cv2.inRange(hsvimg, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
         objects = self.__find_objects(mask)
         if(len(objects) >= 1):
-            self._ranked[teamrank] = self.loadPlayersNames(objects)
+            self._ranked[teamrank] = self.__load_players_names(objects)
             # if teamrank == 1:
             #    self.ranked[teamrank] = self.ranked[teamrank][::-1]
             player_positions = objects
@@ -161,7 +162,7 @@ class Game:
                 objects.append(whiteContour)
         return objects
 
-    def loadPlayersNames(self, objects):
+    def __load_players_names(self, objects):
         """
         take the position of alle players of a team and rank them sortet from the position of the field
         Return: Array with sorted list of players ranks
@@ -215,7 +216,7 @@ class Game:
             self._counter_team2 = 0
             self._results = False
 
-    def ballSpeedTracking(self):
+    def _ball_speed_tracking(self):
         """
         Measure the current speed of the ball on the frame
         """
