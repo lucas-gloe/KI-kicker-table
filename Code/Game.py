@@ -11,6 +11,9 @@ class Game:
     """
 ################################# INITIALIZE GAME CLASS ####################################
     def __init__(self):
+        """
+        Initialize game variables and properties
+        """
         self._start_time = None
         self._num_occurrences = 0
         self._current_ball_position = None
@@ -34,16 +37,25 @@ class Game:
         self._last_speed = [0.0]
 
     def start(self):
+        """
+        start time counter for FPS tracking
+        """
         self._start_time = datetime.now()
         return self
 
     def __counts_per_sec(self):
+        """
+        calculate average FPS output while videotracking
+        """
         elapsed_time = (datetime.now() - self._start_time).total_seconds()
         return self._num_occurrences / elapsed_time if elapsed_time > 0 else 0
 
 ################################ INTERPRETATION OF THE FRAME ###############################
 
     def interpret_frame(self, frame):
+        """
+        interpret, track and draw game properties on the frame
+        """
         # Frame interpretation
         self._num_occurrences += 1
         hsvimg = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -52,7 +64,7 @@ class Game:
         self._player2_figures = self._track_players(2, 1, hsvimg)
         
         self._check_keybindings()
-        
+
         #track game stats
         self._count_gamescore() 
         self._detect_ball_reentering()
@@ -82,6 +94,9 @@ class Game:
 ####################################  TRACKING ##############################################
 
     def _track_ball(self, hsvimg):
+        """
+        look for objects in the dedicated mask, save the center position of the balls position
+        """
         mask = cv2.inRange(hsvimg, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
         objects = self.__find_objects(mask)
         if(len(objects) == 1):
@@ -95,37 +110,42 @@ class Game:
             centerY = int((y+(h/2)))
         
             # save the current position of the ball into an array
-            self._current_ball_position = [centerX,centerY]
+            self._current_ball_position = [centerX, centerY]
 
             self._predicted = self._kf.predict(centerX, centerY)
 
         elif(len(objects) == 0):
             print("Ball nicht erkannt")
-            self._current_ball_position = [-1,-1]
+            self._current_ball_position = [-1, -1]
         else:
-            if len(self._ball_positions)>2:
-                if self._ball_positions[-1] == [-1,-1]:
-                    self._current_ball_position = [-1,-1]
-
-                # if self.ball_positions[-1] != [-1,-1]:
-                #     positionMatrix = np.array(objects)
-                #     ball_positions = np.array(self.ball_positions)
-
-                #     potenzielleBälle = positionMatrix[np.abs(positionMatrix[:,2]-positionMatrix[:,3]) <= 5]
-                #     näheZumLetztenBall = np.abs(potenzielleBälle[:,0]-ball_positions[-1,0])
-                #     wahrscheinlichePosition = potenzielleBälle[np.where(np.min(näheZumLetztenBall))]
-
-                #     centerX = int((wahrscheinlichePosition[:,0]+(wahrscheinlichePosition[:,2]/2)))
-                #     centerY = int((wahrscheinlichePosition[:,1]+(wahrscheinlichePosition[:,3]/2)))
-
-                #     self.current_ball_position = [centerX,centerY]
-            else:
-                self._current_ball_position = [-1,-1]
+            # if len(self._ball_positions)>2:
+            #     if self._ball_positions[-1] == [-1, -1]:
+            #         self._current_ball_position = [-1, -1]
+            #
+            #     if self._ball_positions[-1] != [-1, -1]:
+            #         positionmatrix = np.array(objects)
+            #         ball_positions = np.array(self._ball_positions)
+            #         ball_positions = np.delete(ball_positions, np.where(ball_positions[:] == [-1, -1]), axis=0)
+            #
+            #         potenziellebaelle = positionmatrix[np.abs(positionmatrix[:, 2]-positionmatrix[:, 3]) <= 5]
+            #         naehezumletztenball = np.abs(potenziellebaelle[:, 0]-ball_positions[-1, 0])
+            #         print(naehezumletztenball)
+            #         wahrscheinlicheposition = potenziellebaelle[np.where(np.min(naehezumletztenball))]
+            #
+            #         centerx = int((wahrscheinlicheposition[:, 0]+(wahrscheinlicheposition[:, 2]/2)))
+            #         centery = int((wahrscheinlicheposition[:, 1]+(wahrscheinlicheposition[:, 3]/2)))
+            #
+            #         self.current_ball_position = [centerx,centery]
+            # else:
+            self._current_ball_position = [-1, -1]
 
 
         self._ball_positions.append(self._current_ball_position)
 
     def _track_players(self, team_number, teamrank, hsvimg):
+        """
+        look for objects on the dedicated mask, sort them for positionranking and save them on players_positions
+        """
         player_positions = []
         mask = cv2.inRange(hsvimg, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
         objects = self.__find_objects(mask)
@@ -178,6 +198,9 @@ class Game:
 ##################################### GAME STATS ##############################################################
 
     def _check_keybindings(self):
+        """
+        Check the dedicated keys if their where pressed to set flag
+        """
         if keyboard.is_pressed("c"): # start calibration of kicker frame
             self._show_contour = True
         if keyboard.is_pressed("f"): # end calibration of kicker frame
@@ -186,6 +209,9 @@ class Game:
             self._new_game = True
 
     def _count_gamescore(self):
+        """
+        Count game score +1  of a certan team if a goal was shot
+        """
         if len(self._ball_positions) > 1 and 0 < self._ball_positions[-2][0] < 250 and 430 < self._ball_positions[-2][1] < 670 and self._ball_positions[-1] == [-1,-1] and self._ball_out_of_game:
             self._goal1_detected = True
             self.goalInCurrentFrame = True
@@ -202,6 +228,9 @@ class Game:
             self._ball_out_of_game = False
 
     def _detect_ball_reentering(self):
+        """
+        Detect if the ball reenters the field in the middle section of the Kicker after a goal was shot
+        """
         if self._goal1_detected or self._goal2_detected:
             if 700 < self._ball_positions[-1][0] < 1270 and self._ball_positions[-2] == [-1,-1]:
                 self._goal1_detected = False
@@ -210,6 +239,9 @@ class Game:
                 self._ball_out_of_game = True
     
     def _reset_game(self):
+        """
+        Reset current game results to 0:0
+        """
         if self._new_game and self._results:
             self._game_results.append([self._counter_team1, self._counter_team2])
             self._counter_team1 = 0
@@ -218,7 +250,7 @@ class Game:
 
     def _ball_speed_tracking(self):
         """
-        Measure the current speed of the ball on the frame
+        Measure the current speed of the ball
         """
         if len(self._ball_positions)>=3 and self._ball_positions[-1] != [-1,-1]:
             #safe the current ballposition into an numpyArray
@@ -243,6 +275,9 @@ class Game:
             
 
     def _check_length_of_arrays(self):
+        """
+        delete elements of arrays if they are too long
+        """
         if len(self._ball_positions)>=1000:
             self._ball_positions.pop(0)
         if len(self._last_speed)>=100:
@@ -269,7 +304,7 @@ class Game:
 
     def _draw_ball(self, frame):
         """
-        Draw a cicle at the balls position and name the Object "ball"
+        Draw a circle at the balls position and name the Object "ball"
         """
         # draw a circle for the ball
         if(self._current_ball_position != [-1,-1]):
@@ -277,6 +312,9 @@ class Game:
             cv2.putText(frame,"Ball", (self._current_ball_position[0], self._current_ball_position[1]) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
 
     def _draw_predicted_ball(self, frame):
+        """
+        Draw a circle at the predicted balls position if their is no ball detected in the frame and name the Object "ball"
+        """
         if(self._current_ball_position == [-1,-1]):
             cv2.circle(frame,(self._predicted[0], self._predicted[1]), 16 ,(0,255,255),2)
 
@@ -290,9 +328,15 @@ class Game:
                 cv2.putText(frame,("Team" + str(team) + ", " + str(self._ranked[team-1][i])), (player_position[0],player_position[1]) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
     
     def _show_game_score(self, frame):
+        """
+        Draw game score at the bottom right corner
+        """
         cv2.putText(frame,(str(self._counter_team1) + " : " + str(self._counter_team2)), (1700, 850) ,cv2.FONT_HERSHEY_PLAIN , 2 , (30, 144, 255), 2)
 
     def _show_last_games(self, frame):
+        """
+        Draw results of the last three games at the top right corner
+        """
         cv2.putText(frame,("Last Games"), (1700, 200) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
         cv2.putText(frame,(str(self._game_results[-1][0]) + " : " + str(self._game_results[-1][1])), (1700, 220) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
         if len(self._game_results)>2:
@@ -301,4 +345,7 @@ class Game:
             cv2.putText(frame,(str(self._game_results[-3][0]) + " : " + str(self._game_results[-3][1])), (1700, 260) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)
 
     def _show_ball_speed(self, frame):
+        """
+        Draw fastest ball speed of the last ~4sek in the bottom right corner
+        """
         cv2.putText(frame,(str(max(self._last_speed)) + " Km/h"), (1700, 900) ,cv2.FONT_HERSHEY_PLAIN , 1 , (30, 144, 255), 2)

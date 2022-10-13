@@ -15,7 +15,7 @@ class VideoGet:
         self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth of the frame
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width of the frame
-        self.stream.set(cv2.CAP_PROP_FPS, 60) #FPS output from camera
+        self.stream.set(cv2.CAP_PROP_FPS, 120) #FPS output from camera
 
         (self.grabbed, self.frame) = self.stream.read()
 

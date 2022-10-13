@@ -11,9 +11,9 @@ def main():
     VideoShow objects/threads.
     """
 
-    video_getter = VideoGet(VideoGet.CAMERA_1).start()
+    video_getter = VideoGet(VideoGet.DEFAULT_CAM).start()
     video_shower = VideoShow(video_getter.frame).start()
-    game = Game().start()  
+    game = Game().start()
 
     while True:
         if video_getter.stopped or video_shower.stopped:
