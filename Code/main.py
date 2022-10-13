@@ -1,4 +1,5 @@
 from video_get import VideoGet
+from video_get_from_file import VideoGetFromFile
 from video_show import VideoShow
 from game import Game
 
@@ -12,6 +13,7 @@ def main():
     """
 
     video_getter = VideoGet(VideoGet.DEFAULT_CAM).start()
+    #video_getter = VideoGetFromFile(VideoGetFromFile.VIDEO_FILE).start()
     video_shower = VideoShow(video_getter.frame).start()
     game = Game().start()
 
