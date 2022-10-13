@@ -17,6 +17,7 @@ class VideoShow:
     def show(self):
         while not self.stopped:
             cv2.imshow("Video", self.frame)
+            #cv2.waitKey(33) # bei 30fps
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True
 
