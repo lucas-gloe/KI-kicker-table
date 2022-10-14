@@ -1,7 +1,6 @@
-from video_get import VideoGet
-from video_get_from_file import VideoGetFromFile
-from video_show import VideoShow
 from game import Game
+from video_get import VideoGet
+from video_show import VideoShow
 
 
 def main():
@@ -11,7 +10,7 @@ def main():
     Main thread serves only to pass frames between VideoGet and
     VideoShow objects/threads.
     """
-
+    _first_frame = True
     video_getter = VideoGet(VideoGet.CAMERA_1).start()
     #video_getter = VideoGetFromFile(VideoGetFromFile.VIDEO_FILE).start()
     video_shower = VideoShow(video_getter.frame).start()
@@ -24,8 +23,11 @@ def main():
             break
 
         frame = video_getter.frame
-        #tracked_frame = frame.copy()
-        #putIterationsPerSec(tracked_frame, cps.countsPerSec())
+
+        if _first_frame:
+            game.region_of_interest(frame)
+            _first_frame = False
+
         frame = game.interpret_frame(frame)
 
         video_shower.frame = frame
