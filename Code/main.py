@@ -12,7 +12,7 @@ def main():
     VideoShow objects/threads.
     """
 
-    video_getter = VideoGet(VideoGet.DEFAULT_CAM).start()
+    video_getter = VideoGet(VideoGet.CAMERA_1).start()
     #video_getter = VideoGetFromFile(VideoGetFromFile.VIDEO_FILE).start()
     video_shower = VideoShow(video_getter.frame).start()
     game = Game().start()

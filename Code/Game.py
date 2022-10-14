@@ -23,8 +23,8 @@ class Game:
         self._pixel = (0, 0, 0)
         self._current_ball_position = None
         self._ball_positions = []
-        self._colors = [[0, 95, 134, 9, 144, 234], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
-        # self._colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
+        self._colors = [[0, 116, 182, 7, 175, 255], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
+        #self._colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
         self._kf = KalmanFilter()
         self._ranked = [[], []]
         self._player1_figures = []
@@ -108,13 +108,13 @@ class Game:
         mask = cv2.inRange(hsvimg, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
 
         objects = self.__find_objects(mask)
-        if (len(objects) == 1):
+        if len(objects) == 1:
             x = objects[0][0]
             y = objects[0][1]
             w = objects[0][2]
             h = objects[0][3]
 
-            # defing the centerpoints for the case the detected contour is the ball
+            # defining the center points for the case the detected contour is the ball
             centerX = int((x + (w / 2)))
             centerY = int((y + (h / 2)))
 
@@ -123,46 +123,28 @@ class Game:
 
             self._predicted = self._kf.predict(centerX, centerY)
 
-        elif (len(objects) == 0):
+        elif len(objects) == 0:
             print("Ball nicht erkannt")
             self._current_ball_position = [-1, -1]
         else:
-            if len(self._ball_positions) > 0:
-                if self._ball_positions[-1] == [-1, -1]:
-                    self._current_ball_position = [-1, -1]
-
-                if self._ball_positions[-1] != [-1, -1]:
-                    positionmatrix = np.array(objects)
-                    ball_positions = np.array(self._ball_positions)
-                    ball_positions = np.delete(ball_positions, np.where(ball_positions[:] == [-1, -1]), axis=0)
-                    potenziellebaelle = positionmatrix[np.where(np.abs(positionmatrix[:, 2] - positionmatrix[:, 3]) <= 5)]
-                    if len(potenziellebaelle) > 0:
-                        naehezumletztenball = np.abs(potenziellebaelle[:, 0] - ball_positions[-1, 0])
-                        wahrscheinlicheposition = potenziellebaelle[(np.argmin(naehezumletztenball))]
-                        centerX = int((wahrscheinlicheposition[0] + (wahrscheinlicheposition[2] / 2)))
-                        centerY = int((wahrscheinlicheposition[1] + (wahrscheinlicheposition[3] / 2)))
-
-                        self.current_ball_position = [centerX, centerY]
-            else:
-                self._current_ball_position = [-1, -1]
+            #self.__calculate_balls_position(objects)
+            self._current_ball_position = [-1, -1]
 
         self._ball_positions.append(self._current_ball_position)
 
     def _track_players(self, team_number, teamrank, hsvimg):
         """
-        look for objects on the dedicated mask, sort them for positionranking and save them on players_positions
+        look for objects on the dedicated mask, sort them for position ranking and save them on players_positions
         """
         player_positions = []
         mask = cv2.inRange(hsvimg, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
         objects = self.__find_objects(mask)
-        if (len(objects) >= 1):
-            self._ranked[teamrank] = self.__load_players_names(objects)
-            # if teamrank == 1:
-            #    self.ranked[teamrank] = self.ranked[teamrank][::-1]
+        if len(objects) >= 1:
+            self._ranked[teamrank] = self.__load_players_names(objects, teamrank)
             player_positions = objects
             return player_positions
 
-        elif (len(objects) == 0):
+        elif len(objects) == 0:
             print("Spieler nicht erkannt")
 
     def __find_objects(self, mask):
@@ -174,7 +156,7 @@ class Game:
         # outline the contours on the mask
         contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         x, y, w, h = 0, 0, 0, 0
-        whiteContour = []
+        white_contour = []
         objects = []
         # looping over every contour which was found
         for cnt in contours:
@@ -184,11 +166,11 @@ class Game:
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 x, y, w, h = cv2.boundingRect(approx)
-                whiteContour = x, y, w, h
-                objects.append(whiteContour)
+                white_contour = x, y, w, h
+                objects.append(white_contour)
         return objects
 
-    def __load_players_names(self, objects):
+    def __load_players_names(self, objects, teamrank):
         """
         take the position of alle players of a team and rank them sortet from the position of the field
         Return: Array with sorted list of players ranks
@@ -199,8 +181,39 @@ class Game:
             sortedValuetMatrix = valuetMatrix.argsort()
             ranks = np.empty_like(sortedValuetMatrix)
             ranks[sortedValuetMatrix] = np.arange(len(valuetMatrix))
+            if teamrank == 1:
+                ranks = self.__reverse_ranks(ranks)
             return ranks
 
+    def __calculate_balls_position(self, objects):
+        if len(self._ball_positions) > 0:
+            if self._ball_positions[-1] == [-1, -1]:
+                self._current_ball_position = [-1, -1]
+
+            if self._ball_positions[-1] != [-1, -1]:
+                positionmatrix = np.array(objects)
+                ball_positions = np.array(self._ball_positions)
+                ball_positions = np.delete(ball_positions, np.where(ball_positions[:] == [-1, -1]), axis=0)
+                potenziellebaelle = positionmatrix[np.where(np.abs(positionmatrix[:, 2] - positionmatrix[:, 3]) <= 5)]
+                if len(potenziellebaelle) > 0:
+                    naehezumletztenball = np.abs(potenziellebaelle[:, 0] - ball_positions[-1, 0])
+                    wahrscheinlicheposition = potenziellebaelle[(np.argmin(naehezumletztenball))]
+                    centerX = int((wahrscheinlicheposition[0] + (wahrscheinlicheposition[2] / 2)))
+                    centerY = int((wahrscheinlicheposition[1] + (wahrscheinlicheposition[3] / 2)))
+
+                    self.current_ball_position = [centerX, centerY]
+        else:
+            self._current_ball_position = [-1, -1]
+
+    def __reverse_ranks(self, ranks):
+        gesamtlaenge = len(ranks)
+        reversed_ranks = []
+
+        for rank in ranks:
+            place = (gesamtlaenge - 1) - rank
+            reversed_ranks.append(place)
+
+        return reversed_ranks
     ##################################### GAME STATS ##############################################################
 
     def _check_keybindings(self):
@@ -274,7 +287,7 @@ class Game:
             # calculate the travelled distance between 1 frame
             distance = (distance1 + distance2) / 2
             # convert the travelled distance into real speed messauring
-            # -> Cameraview on Kicker Table is 1300px x 740p at 120, Kicker Table is 1,20m x 0,68m relationship: ~1:1.083
+            # ->Cameraview on Kicker Table is 1300px x 740p at 120, Kicker Table is 1,20m x 0,68m relationship: ~1:1.083
             realDistancePerFrame = distance / 1083
             realDistancePerSecond = realDistancePerFrame * 60
             kmh = realDistancePerSecond * 3.6
@@ -321,7 +334,7 @@ class Game:
 
     def _draw_predicted_ball(self, frame):
         """
-        Draw a circle at the predicted balls position if their is no ball detected in the frame and name the Object "ball"
+        Draw a circle at the predicted balls position if there is no ball detected in the frame and name the Object "ball"
         """
         if self._current_ball_position == [-1, -1]:
             cv2.circle(frame, (self._predicted[0], self._predicted[1]), 16, (0, 255, 255), 2)
@@ -340,16 +353,16 @@ class Game:
 
     def _show_game_score(self, frame):
         """
-        Draw game score at the bottom right corner
+        Draw game score in the bottom right corner
         """
         cv2.putText(frame, (str(self._counter_team1) + " : " + str(self._counter_team2)), (1700, 850),
                     cv2.FONT_HERSHEY_PLAIN, 2, (30, 144, 255), 2)
 
     def _show_last_games(self, frame):
         """
-        Draw results of the last three games at the top right corner
+        Draw results of the last three games in the top right corner
         """
-        cv2.putText(frame, ("Last Games"), (1700, 200), cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
+        cv2.putText(frame, "Last Games", (1700, 200), cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
         cv2.putText(frame, (str(self._game_results[-1][0]) + " : " + str(self._game_results[-1][1])), (1700, 220),
                     cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
         if len(self._game_results) > 2:
@@ -361,7 +374,7 @@ class Game:
 
     def _show_ball_speed(self, frame):
         """
-        Draw fastest ball speed of the last ~4sek in the bottom right corner
+        Draw the fastest ball speed of the last ~4sek in the bottom right corner
         """
         cv2.putText(frame, (str(max(self._last_speed)) + " Km/h"), (1700, 900), cv2.FONT_HERSHEY_PLAIN, 1,
                     (30, 144, 255), 2)
