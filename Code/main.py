@@ -26,6 +26,10 @@ def main():
         frame = video_getter.frame
 
         if _first_frame:
+            # DetectField.get_angle(CalibrationImage)
+            # DetectField.get_center_scale(CalibrationImage)
+            # Field = DetectField.calc_field()
+            # DetectField.calc_goal_area()
             game.region_of_interest(frame)
             _first_frame = False
 
