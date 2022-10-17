@@ -1,5 +1,6 @@
-import cv2
 from threading import Thread
+
+import cv2
 
 
 class VideoGetFromFile:
@@ -12,15 +13,15 @@ class VideoGetFromFile:
 
     def __init__(self, src=VIDEO_FILE):
         self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080) #heigth of the frame
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920) #width of the frame
-        #self.stream.set(cv2.CAP_PROP_FPS, 30) #FPS output from camera
+        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # height of the frame
+        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame
+        # self.stream.set(cv2.CAP_PROP_FPS, 30) #FPS output from camera
 
         (self.grabbed, self.frame) = self.stream.read()
 
         self.stopped = False
 
-    def start(self):    
+    def start(self):
         Thread(target=self.get, args=()).start()
         return self
 
