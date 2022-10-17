@@ -22,7 +22,7 @@ class VideoGet:
 
         self.stopped = False
 
-    def start(self):    
+    def start(self):
         Thread(target=self.get, args=()).start()
         return self
 

@@ -26,7 +26,7 @@ class Game:
         self._current_ball_position = None
         self._ball_positions = []
         self._colors = [[0, 116, 182, 7, 175, 255], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
-        #self._colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
+        # self._colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
         self._kf = KalmanFilter()
         self._players_on_field = False
         self._ranked = [[], []]
@@ -54,7 +54,6 @@ class Game:
     def region_of_interest(self, frame):
         # Select ROI
         self._region_of_interest = cv2.selectROI("select the area of the field", frame)
-        print(self._region_of_interest)
         cv2.destroyWindow("select the area of the field")
 
     def __counts_per_sec(self):
@@ -72,15 +71,15 @@ class Game:
         """
         # Frame interpretation
         self._num_occurrences += 1
-        hsvimg = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        self._track_ball(hsvimg)
-        self._player1_figures = self._track_players(1, 0, hsvimg)
-        self._player2_figures = self._track_players(2, 1, hsvimg)
+        hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        self._track_ball(hsv_img)
+        self._player1_figures = self._track_players(1, 0, hsv_img)
+        self._player2_figures = self._track_players(2, 1, hsv_img)
 
         self._check_keybindings()
 
         # track game stats
-        self._count_gamescore()
+        self._count_game_score()
         self._detect_ball_reentering()
         self._reset_game()
         self._ball_speed_tracking()
@@ -98,23 +97,20 @@ class Game:
         self._show_last_games(out_frame)
         self._show_ball_speed(out_frame)
 
-        # check arrays
-        self._check_length_of_arrays()
-
         return out_frame
 
     #################################### FUNCTIONS FOR INTERPRETATION ###########################
 
     ####################################  TRACKING ##############################################
 
-    def _track_ball(self, hsvimg):
+    def _track_ball(self, hsv_img):
         """
         look for objects in the dedicated mask, save the center position of the balls position
         """
         # self._first_frame, self._values, self._pixel = ColorPicker.color_picker(self._first_frame, self._values, hsvimg, self._pixel)
         # mask = cv2.inRange(hsvimg, self._values[0], self._values[1])
 
-        mask = cv2.inRange(hsvimg, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
+        mask = cv2.inRange(hsv_img, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
 
         objects = self.__find_objects(mask)
 
@@ -125,13 +121,13 @@ class Game:
             h = objects[0][3]
 
             # defining the center points for the case the detected contour is the ball
-            centerX = int((x + (w / 2)))
-            centerY = int((y + (h / 2)))
+            center_x = int((x + (w / 2)))
+            center_y = int((y + (h / 2)))
 
             # save the current position of the ball into an array
-            self._current_ball_position = [centerX, centerY]
+            self._current_ball_position = [center_x, center_y]
 
-            self._predicted = self._kf.predict(centerX, centerY)
+            self._predicted = self._kf.predict(center_x, center_y)
 
         elif len(objects) == 0:
             print("Ball nicht erkannt")
@@ -142,21 +138,21 @@ class Game:
 
         self._ball_positions.append(self._current_ball_position)
 
-    def _track_players(self, team_number, teamrank, hsvimg):
+    def _track_players(self, team_number, team_rank, hsv_img):
         """
         look for objects on the dedicated mask, sort them for position ranking and save them on players_positions
         """
         player_positions = []
-        mask = cv2.inRange(hsvimg, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
+        mask = cv2.inRange(hsv_img, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
         objects = self.__find_objects(mask)
         if len(objects) >= 1:
             self._players_on_field = True
-            self._ranked[teamrank] = self.__load_players_names(objects, teamrank)
+            self._ranked[team_rank] = self.__load_players_names(objects, team_rank)
             player_positions = objects
             return player_positions
 
         elif len(objects) == 0:
-            self._players_on_field= False
+            self._players_on_field = False
             print("Spieler nicht erkannt")
 
     def __find_objects(self, mask):
@@ -173,7 +169,7 @@ class Game:
         # looping over every contour which was found
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            # saving countours properties in variables if a certain area is detected on the mask (to prevent blurring)
+            # saving contours properties in variables if a certain area is detected on the mask (to prevent blurring)
             if area > 100:
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
@@ -181,25 +177,25 @@ class Game:
                 white_contour = x, y, w, h
                 objects.append(white_contour)
 
-        # check if objects are inside in the ROI
+        # check if objects are inside the ROI
         objects = np.array(objects)
         if len(objects) > 1:
             objects = np.delete(objects, np.where(((self._region_of_interest[0] > objects[:, 0]) | (objects[:, 0] > self._region_of_interest[2])) | ((self._region_of_interest[1] > objects[:, 1]) | (objects[:, 1] > self._region_of_interest[3]))), axis=0)
 
         return objects
 
-    def __load_players_names(self, objects, teamrank):
+    def __load_players_names(self, objects, team_rank):
         """
-        take the position of alle players of a team and rank them sortet from the position of the field
+        take the position of alle players of a team and rank them sorted from the position of the field
         Return: Array with sorted list of players ranks
         """
         if len(objects) > 0:
-            positionMatrix = np.array(objects)
-            valuetMatrix = positionMatrix[:, 0] * 10 + positionMatrix[:, 1]
-            sortedValuetMatrix = valuetMatrix.argsort()
-            ranks = np.empty_like(sortedValuetMatrix)
-            ranks[sortedValuetMatrix] = np.arange(len(valuetMatrix))
-            if teamrank == 1:
+            position_matrix = np.array(objects)
+            valued_matrix = position_matrix[:, 0] * 10 + position_matrix[:, 1]
+            sorted_valued_matrix = valued_matrix.argsort()
+            ranks = np.empty_like(sorted_valued_matrix)
+            ranks[sorted_valued_matrix] = np.arange(len(valued_matrix))
+            if team_rank == 1:
                 ranks = self.__reverse_ranks(ranks)
             return ranks
 
@@ -209,17 +205,17 @@ class Game:
                 self._current_ball_position = [-1, -1]
 
             if self._ball_positions[-1] != [-1, -1]:
-                positionmatrix = np.array(objects)
+                position_matrix = np.array(objects)
                 ball_positions = np.array(self._ball_positions)
                 ball_positions = np.delete(ball_positions, np.where(ball_positions[:] == [-1, -1]), axis=0)
-                potenziellebaelle = positionmatrix[np.where(np.abs(positionmatrix[:, 2] - positionmatrix[:, 3]) <= 5)]
+                potenziellebaelle = position_matrix[np.where(np.abs(position_matrix[:, 2] - position_matrix[:, 3]) <= 5)]
                 if len(potenziellebaelle) > 0:
                     naehezumletztenball = np.abs(potenziellebaelle[:, 0] - ball_positions[-1, 0])
                     wahrscheinlicheposition = potenziellebaelle[(np.argmin(naehezumletztenball))]
-                    centerX = int((wahrscheinlicheposition[0] + (wahrscheinlicheposition[2] / 2)))
-                    centerY = int((wahrscheinlicheposition[1] + (wahrscheinlicheposition[3] / 2)))
+                    center_x = int((wahrscheinlicheposition[0] + (wahrscheinlicheposition[2] / 2)))
+                    center_y = int((wahrscheinlicheposition[1] + (wahrscheinlicheposition[3] / 2)))
 
-                    self.current_ball_position = [centerX, centerY]
+                    self.current_ball_position = [center_x, center_y]
         else:
             self._current_ball_position = [-1, -1]
 
@@ -244,10 +240,13 @@ class Game:
             self._show_contour = False
         if keyboard.is_pressed("n"):  # start new game
             self._new_game = True
+            self._ball_positions = []
+            self._last_speed = []
 
-    def _count_gamescore(self):
+
+    def _count_game_score(self):
         """
-        Count game score +1  of a certan team if a goal was shot
+        Count game score +1  of a certain team if a goal was shot
         """
         if len(self._ball_positions) > 1 and 0 < self._ball_positions[-2][0] < 250 and 430 < self._ball_positions[-2][
             1] < 670 and self._ball_positions[-1] == [-1, -1] and self._ball_out_of_game:
@@ -292,34 +291,25 @@ class Game:
         Measure the current speed of the ball
         """
         if len(self._ball_positions) >= 3 and self._ball_positions[-1] != [-1, -1]:
-            # safe the current ballposition into an numpyArray
-            currentPosition = np.array(self._ball_positions[-1])
-            # safe the current-1 ballposition into an numpyArray
-            middlePosition = np.array(self._ball_positions[-2])
-            # safe the current-2 ballposition into an numpyArray
-            lastPosition = np.array(self._ball_positions[-3])
+            # safe the current ball position into an numpyArray
+            current_position = np.array(self._ball_positions[-1])
+            # safe the current-1 ball position into an numpyArray
+            middle_position = np.array(self._ball_positions[-2])
+            # safe the current-2 ball position into an numpyArray
+            last_position = np.array(self._ball_positions[-3])
             # measure the distance between the last and last-1 point of the ball
-            distance1 = np.linalg.norm(currentPosition - middlePosition)
+            distance1 = np.linalg.norm(current_position - middle_position)
             # measure the distance between the last-1 and last-2 point of the ball
-            distance2 = np.linalg.norm(middlePosition - lastPosition)
+            distance2 = np.linalg.norm(middle_position - last_position)
             # calculate the travelled distance between 1 frame
             distance = (distance1 + distance2) / 2
-            # convert the travelled distance into real speed messauring
-            # ->Cameraview on Kicker Table is 1300px x 740p at 120, Kicker Table is 1,20m x 0,68m relationship: ~1:1.083
-            realDistancePerFrame = distance / 1083
-            realDistancePerSecond = realDistancePerFrame * 60
-            kmh = realDistancePerSecond * 3.6
+            # convert the travelled distance into real speed measuring
+            # ->Camera view on Kicker Table is 1300px x 740p at 120, Kicker Table is 1,20m x 0,68m relationship: ~1:1083
+            real_distance_per_frame = distance / 1083
+            real_distance_per_second = real_distance_per_frame * 60
+            kmh = real_distance_per_second * 3.6
             kmh = round(kmh, 2)
             self._last_speed.append(kmh)
-
-    def _check_length_of_arrays(self):
-        """
-        delete elements of arrays if they are too long
-        """
-        if len(self._ball_positions) >= 1000:
-            self._ball_positions.pop(0)
-        if len(self._last_speed) >= 100:
-            self._last_speed.pop(0)
 
     #####################################  PRINTING ON FRAME ######################################################
 
@@ -352,7 +342,8 @@ class Game:
 
     def _draw_predicted_ball(self, frame):
         """
-        Draw a circle at the predicted balls position if there is no ball detected in the frame and name the Object "ball"
+        Draw a circle at the predicted balls position if there is no ball
+        detected in the frame and name the Object "ball"
         """
         if self._current_ball_position == [-1, -1]:
             cv2.circle(frame, (self._predicted[0], self._predicted[1]), 16, (0, 255, 255), 2)
