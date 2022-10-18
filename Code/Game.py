@@ -25,8 +25,8 @@ class Game:
         self._pixel = (0, 0, 0)
         self._current_ball_position = None
         self._ball_positions = []
+        # self.colors = farben aus calibrierung
         self._colors = [[0, 116, 182, 7, 175, 255], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
-        # self._colors = [[0, 69, 151, 9, 106, 201], [0, 114, 144, 57, 255, 255], [102, 66, 73,125, 255, 255]] #HSV
         self._kf = KalmanFilter()
         self._players_on_field = False
         self._ranked = [[], []]
@@ -50,11 +50,6 @@ class Game:
         """
         self._start_time = datetime.now()
         return self
-
-    def region_of_interest(self, frame):
-        # Select ROI
-        self._region_of_interest = cv2.selectROI("select the area of the field", frame)
-        cv2.destroyWindow("select the area of the field")
 
     def __counts_per_sec(self):
         """
@@ -176,11 +171,6 @@ class Game:
                 x, y, w, h = cv2.boundingRect(approx)
                 white_contour = x, y, w, h
                 objects.append(white_contour)
-
-        # check if objects are inside the ROI
-        objects = np.array(objects)
-        if len(objects) > 1:
-            objects = np.delete(objects, np.where(((self._region_of_interest[0] > objects[:, 0]) | (objects[:, 0] > self._region_of_interest[2])) | ((self._region_of_interest[1] > objects[:, 1]) | (objects[:, 1] > self._region_of_interest[3]))), axis=0)
 
         return objects
 
