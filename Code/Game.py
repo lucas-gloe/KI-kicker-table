@@ -17,7 +17,6 @@ class Game:
         """
         Initialize game variables and properties
         """
-        self._region_of_interest = []
         self._start_time = None
         self._num_occurrences = 0
         self._first_frame = True
@@ -25,10 +24,16 @@ class Game:
         self._pixel = (0, 0, 0)
         self._current_ball_position = None
         self._ball_positions = []
-        # self.colors = farben aus calibrierung
+        # self.ball_color = farbe aus calibrierung, daher erste stelle in colors unwichtig
         self._colors = [[0, 116, 182, 7, 175, 255], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
+        self.ball_color = []
         self._kf = KalmanFilter()
         self._players_on_field = False
+        self.field = []
+        self.match_field = []
+        self.goal1 = []
+        self.goal2 = []
+        self.throw_in_zone = []
         self._ranked = [[], []]
         self._player1_figures = []
         self._player2_figures = []
@@ -60,13 +65,16 @@ class Game:
 
     ################################ INTERPRETATION OF THE FRAME ###############################
 
-    def interpret_frame(self, frame):
+    def interpret_frame(self, frame, ball_color, field):
         """
         interpret, track and draw game properties on the frame
         """
         # Frame interpretation
         self._num_occurrences += 1
+        self.ball_color = ball_color
+        self.field = field
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        self.load_game_field_properties()
         self._track_ball(hsv_img)
         self._player1_figures = self._track_players(1, 0, hsv_img)
         self._player2_figures = self._track_players(2, 1, hsv_img)
@@ -98,17 +106,47 @@ class Game:
 
     ####################################  TRACKING ##############################################
 
+    def load_game_field_properties(self):
+        """
+
+        """
+        self.match_field = np.array([[int(self.field[0][0]), int(self.field[0][1])],
+                                     [int(self.field[2][0]), int(self.field[2][1])]])
+        self.goal1 = np.array([[int(self.match_field[0][0] - 20), int((np.linalg.norm(
+            (self.match_field[1][1] - self.match_field[0][1]) / 2) + self.match_field[0][1]) - 120)],
+                               [int(self.match_field[0][0] + 20), int((np.linalg.norm(
+                                   (self.match_field[1][1] - self.match_field[0][1]) / 2) + self.match_field[0][
+                                                                           1]) + 120)]])
+        self.goal2 = np.array([[int(self.match_field[1][0] - 20), int((np.linalg.norm(
+            (self.match_field[1][1] - self.match_field[0][1]) / 2) + self.match_field[0][1]) - 120)],
+                               [int(self.match_field[1][0] + 20), int((np.linalg.norm(
+                                   (self.match_field[1][1] - self.match_field[0][1]) / 2) + self.match_field[0][
+                                                                           1]) + 120)]])
+        self.throw_in_zone = np.array([[int(self.match_field[0][0] + 400), int(self.match_field[0][1])],
+                                       [int(self.match_field[1][0] - 400), int(self.match_field[1][1])]])
+
     def _track_ball(self, hsv_img):
         """
         look for objects in the dedicated mask, save the center position of the balls position
         """
-        # self._first_frame, self._values, self._pixel = ColorPicker.color_picker(self._first_frame, self._values, hsvimg, self._pixel)
-        # mask = cv2.inRange(hsvimg, self._values[0], self._values[1])
+        lower_color = np.asarray(self.ball_color)
+        upper_color = np.asarray(self.ball_color)
+        lower_color = lower_color - [10, 50, 50]  # good values (for test video are 10,50,50)
+        upper_color = upper_color + [10, 50, 50]  # good values (for test video are 10,50,50)
+        lower_color[lower_color < 0] = 0
+        lower_color[lower_color > 255] = 255
+        upper_color[upper_color < 0] = 0
+        upper_color[upper_color > 255] = 255
 
-        mask = cv2.inRange(hsv_img, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
+        lower_color = np.array(lower_color)
+        upper_color = np.array(upper_color)
 
+        mask = cv2.inRange(hsv_img, lower_color, upper_color)
+        mask = self.__smooth_ball_mask(mask)
+
+        #mask = cv2.inRange(hsv_img, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
         objects = self.__find_objects(mask)
-
+        
         if len(objects) == 1:
             x = objects[0][0]
             y = objects[0][1]
@@ -128,7 +166,7 @@ class Game:
             print("Ball nicht erkannt")
             self._current_ball_position = [-1, -1]
         else:
-            #self.__calculate_balls_position(objects)
+            # self.__calculate_balls_position(objects)
             self._current_ball_position = [-1, -1]
 
         self._ball_positions.append(self._current_ball_position)
@@ -149,6 +187,7 @@ class Game:
         elif len(objects) == 0:
             self._players_on_field = False
             print("Spieler nicht erkannt")
+            return []
 
     def __find_objects(self, mask):
         """
@@ -174,6 +213,27 @@ class Game:
 
         return objects
 
+    def __smooth_ball_mask(self, mask):
+        """
+        The mask created inDetectBallPosition might be noisy.
+        :param mask: The mask to smooth (Image with bit depth 1)
+        :return: The smoothed mask
+        """
+        # create the disk-shaped kernel for the following image processing,
+        r = 3
+        kernel = np.ones((2 * r, 2 * r), np.uint8)
+        for x in range(0, 2 * r):
+            for y in range(0, 2 * r):
+                if (x - r + 0.5) ** 2 + (y - r + 0.5) ** 2 > r ** 2:
+                    kernel[x, y] = 0
+
+        # remove noise
+        # see http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+        return mask
+
     def __load_players_names(self, objects, team_rank):
         """
         take the position of alle players of a team and rank them sorted from the position of the field
@@ -198,7 +258,8 @@ class Game:
                 position_matrix = np.array(objects)
                 ball_positions = np.array(self._ball_positions)
                 ball_positions = np.delete(ball_positions, np.where(ball_positions[:] == [-1, -1]), axis=0)
-                potenziellebaelle = position_matrix[np.where(np.abs(position_matrix[:, 2] - position_matrix[:, 3]) <= 5)]
+                potenziellebaelle = position_matrix[
+                    np.where(np.abs(position_matrix[:, 2] - position_matrix[:, 3]) <= 5)]
                 if len(potenziellebaelle) > 0:
                     naehezumletztenball = np.abs(potenziellebaelle[:, 0] - ball_positions[-1, 0])
                     wahrscheinlicheposition = potenziellebaelle[(np.argmin(naehezumletztenball))]
@@ -218,6 +279,7 @@ class Game:
             reversed_ranks.append(place)
 
         return reversed_ranks
+
     ##################################### GAME STATS ##############################################################
 
     def _check_keybindings(self):
@@ -232,7 +294,6 @@ class Game:
             self._new_game = True
             self._ball_positions = []
             self._last_speed = []
-
 
     def _count_game_score(self):
         """
@@ -315,10 +376,30 @@ class Game:
         Add football field contour for calibration on frame
         """
         if self._show_contour:
-            cv2.rectangle(frame, (320, 180), (1620, 920), (0, 255, 0), 2)  # field
-            cv2.rectangle(frame, (250, 430), (340, 670), (0, 255, 0), 2)  # goal1
-            cv2.rectangle(frame, (1600, 430), (1690, 660), (0, 255, 0), 2)  # goal2
-            cv2.rectangle(frame, (700, 180), (1270, 920), (0, 255, 0), 2)  # einwurf
+            # cv2.rectangle(frame, (int(self.match_field[0][0]), int(self.match_field[0][1])),
+            #               (int(self.match_field[1][0]), int(self.match_field[1][1])),
+            #               (0, 255, 0), 2)
+            cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
+                     (int(self.field[1][0]), int(self.field[1][1])),
+                     (0, 255, 0), 2)
+            cv2.line(frame, (int(self.field[2][0]), int(self.field[2][1])),
+                     (int(self.field[3][0]), int(self.field[3][1])),
+                     (0, 255, 0), 2)
+            cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
+                     (int(self.field[3][0]), int(self.field[3][1])),
+                     (0, 255, 0), 2)
+            cv2.line(frame, (int(self.field[1][0]), int(self.field[1][1])),
+                     (int(self.field[2][0]), int(self.field[2][1])),
+                     (0, 255, 0), 2)
+            cv2.rectangle(frame, (int(self.goal1[0][0]), int(self.goal1[0][1])),
+                          (int(self.goal1[1][0]), int(self.goal1[1][1])),
+                          (0, 255, 0), 2)
+            cv2.rectangle(frame, (int(self.goal2[0][0]), int(self.goal2[0][1])),
+                          (int(self.goal2[1][0]), int(self.goal2[1][1])),
+                          (0, 255, 0), 2)
+            cv2.rectangle(frame, (int(self.throw_in_zone[0][0]), int(self.throw_in_zone[0][1])),
+                          (int(self.throw_in_zone[1][0]), int(self.throw_in_zone[1][1])),
+                          (0, 255, 0), 2)
 
     def _draw_ball(self, frame):
         """
@@ -349,6 +430,7 @@ class Game:
                               (0, 255, 0), 2)
                 cv2.putText(frame, ("Team" + str(team) + ", " + str(self._ranked[team - 1][i])),
                             (player_position[0], player_position[1]), cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
+            self._players_on_field = False
 
     def _show_game_score(self, frame):
         """

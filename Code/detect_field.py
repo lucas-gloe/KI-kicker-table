@@ -13,9 +13,6 @@ class DetectField:
     center = 0
     ratio_pxcm = 0
     angle = 0
-    goal_center_left = 0
-    goal_center_right = 0
-    goal_area_radius = 0
 
     def get_angle(self, calibration_image):
         """
@@ -55,7 +52,7 @@ class DetectField:
                     angle = angle + corr_angle
                     count = count + 1
                     cv2.line(rgb, (x1, y1), (x2, y2), (0, 0, 255), 2)
-        print(angle)
+
         if isinstance(angle, int) and isinstance(count, int):
             angle = angle / count
             self.angle = angle
@@ -73,7 +70,7 @@ class DetectField:
         gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (5, 5), 1)
 
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=50, param2=30, minRadius=30, maxRadius=200)
+        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=50, param2=30, minRadius=30, maxRadius=100)
 
         center_circle = (0, 0, 0)
         min_dist = 0xFFFFFFFFFFF
@@ -90,7 +87,7 @@ class DetectField:
 
         center = center_circle[0], center_circle[1]
         radius = center_circle[2]
-        ratio_pxcm = radius / 10.25
+        ratio_pxcm = radius / 9
 
         self.center = center
         self.ratio_pxcm = ratio_pxcm
@@ -142,35 +139,14 @@ class DetectField:
         self.field = [top_left, top_right, bottom_right, bottom_left]
         return [top_left, top_right, bottom_right, bottom_left]
 
-    def calc_goal_area(self):
-        """
-        The 'goal area' is the half circle around the goals. It is assumed,
-        that the ball will be seen in a goal area before the score is
-        incremented.
-        :return: None
-        """
-        top_left = self.field[0]
-        top_right = self.field[1]
-        bottom_left = self.field[3]
-
-        tlbl = bottom_left[0] - top_left[0], bottom_left[1] - top_left[1]  # Topleft to BottomLeft
-        tltr = top_right[0] - top_left[0], top_right[1] - top_left[1]  # Topleft to TopRight
-
-        self.goal_center_left = int(top_left[0] + (0.5 * tlbl[0])), int(top_left[1] + (0.5 * tlbl[1]))
-        self.goal_center_right = int(self.goal_center_left[0] + tltr[0]), int(self.goal_center_left[1] + tltr[1])
-
-        self.goal_area_radius = int(16 * self.ratio_pxcm)
-
     def get_var(self, _type):
         """
         Get the class variables
-        :param _type: String to choose the variabe
+        :param _type: String to choose the variable
         :return: The requested variable, empty string if requested name is
         unavailable
         """
-        if 'GoalAreas' == _type:
-            return [self.goal_center_left, self.goal_center_right, self.goal_area_radius]
-        elif 'field' == _type:
+        if 'field' == _type:
             return self.field
         elif 'ratio_pxcm' == _type:
             return self.ratio_pxcm

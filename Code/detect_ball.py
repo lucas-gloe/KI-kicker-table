@@ -11,20 +11,6 @@ class BallTracker:
     ball_color = (-1, -1, -1)
     curr_ball_position = (-1, -1)
 
-    def draw(self, image):
-        """
-        Draws the ball marker onto the image.
-        :param image: The HSV-image to draw on
-        :return: The image with the marker drawn
-        """
-        if self.curr_ball_position != (-1, -1):
-            cv2.circle(image, (self.curr_ball_position[0], self.curr_ball_position[1]), 2, (120, 255, 255), 2)
-        else:
-            # self.interface.message("No ball detected")
-            pass
-
-        return image
-
     def calibrate(self, img_hsv):
         """
         Calibration routine.
@@ -44,6 +30,7 @@ class BallTracker:
         upper_border_arr = color + [20, 20, 20]
         lower_border = tuple(lower_border_arr.tolist())
         upper_border = tuple(upper_border_arr.tolist())
+
         mask = cv2.inRange(img_hsv, lower_border, upper_border)
 
         # Average the color values of the masked area
@@ -55,6 +42,8 @@ class BallTracker:
         av = [h_mean, s_mean, v_mean]
         self.ball_color = tuple(av)
 
+        return self.ball_color
+
     def detect_ball_position(self, img_hsv):
         """
         Finds the ball in the image.
@@ -64,7 +53,7 @@ class BallTracker:
         the other colors in the image, it works well and is a save way to find
         the ball.
         First, the image is searched for pixels with similar color to the ball
-        color creatinga mask. The mask should contain a white point (the ball).
+        color creating a mask. The mask should contain a white point (the ball).
         To ensure that the ball is found, the contours of the mask are found.
         If there are more than one element with contours, a simple
         circle-similarity measure is calculated.
@@ -117,26 +106,7 @@ class BallTracker:
 
         self.__store_ball_position(self.curr_ball_position)
 
-    def _smooth_ball_mask(self, mask):
-        """
-        The mask created inDetectBallPosition might be noisy.
-        :param mask: The mask to smooth (Image with bit depth 1)
-        :return: The smoothed mask
-        """
-        # create the disk-shaped kernel for the following image processing,
-        r = 3
-        kernel = np.ones((2 * r, 2 * r), np.uint8)
-        for x in range(0, 2 * r):
-            for y in range(0, 2 * r):
-                if (x - r + 0.5) ** 2 + (y - r + 0.5) ** 2 > r ** 2:
-                    kernel[x, y] = 0
 
-        # remove noise
-        # see http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
-        return mask
 
     def _check_circle(self, points):
         """
