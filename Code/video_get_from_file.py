@@ -9,7 +9,8 @@ class VideoGetFromFile:
     with a dedicated thread.
     """
 
-    VIDEO_FILE = "../Video/720p/30fps/lang.mov"
+    # VIDEO_FILE = "../Video/1080p/120fps/lang.MP4"
+    VIDEO_FILE = "../Video/720p/60fps/60fps.MOV"
 
     def __init__(self, src=VIDEO_FILE):
         self.stream = cv2.VideoCapture(src)

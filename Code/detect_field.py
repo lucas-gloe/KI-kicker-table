@@ -139,6 +139,27 @@ class DetectField:
         self.field = [top_left, top_right, bottom_right, bottom_left]
         return [top_left, top_right, bottom_right, bottom_left]
 
+    def load_game_field_properties(self, field):
+        """
+
+        """
+        match_field = np.array([[int(field[0][0]), int(field[0][1])],
+                                [int(field[2][0]), int(field[2][1])]])
+        goal1 = np.array([[int(match_field[0][0] - 20), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
+                          [int(match_field[0][0] + 20), int((np.linalg.norm(
+                              (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
+                                                                 1]) + 120)]])
+        goal2 = np.array([[int(match_field[1][0] - 20), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
+                          [int(match_field[1][0] + 20), int((np.linalg.norm(
+                              (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
+                                                                 1]) + 120)]])
+        throw_in_zone = np.array([[int(match_field[0][0] + 400), int(match_field[0][1])],
+                                  [int(match_field[1][0] - 400), int(match_field[1][1])]])
+
+        return [match_field, goal1, goal2, throw_in_zone]
+
     def get_var(self, _type):
         """
         Get the class variables

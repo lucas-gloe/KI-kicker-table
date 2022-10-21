@@ -1,6 +1,7 @@
 import cv2
 from threading import Thread
 
+
 class VideoShow:
     """
     Class that continuously shows a frame using a dedicated thread.
@@ -17,7 +18,8 @@ class VideoShow:
     def show(self):
         while not self.stopped:
             cv2.imshow("Video", self.frame)
-            #cv2.waitKey(33) # bei 30fps
+            # cv2.waitKey(33) # bei 30fps
+            # cv2.waitKey(0)
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True
 
