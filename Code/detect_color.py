@@ -24,9 +24,6 @@ class ColorTracker:
         x_center = int(round(img_hsv.shape[1] / 2))
         y_center = int(round(img_hsv.shape[0] / 2))
 
-        # cv2.circle(img_hsv, (int(x_center), int(y_center)), 1, (0, 0, 255), 1)
-        # cv2.imwrite("croppedBall.jpg", img_hsv)
-
         # Get the color of the pixel in the image center
         color = img_hsv[y_center, x_center]
 
@@ -34,12 +31,10 @@ class ColorTracker:
         lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
         upper_border_arr = [np.max(colors[:, :, 0]), np.max(colors[:, :, 1]), np.max(colors[:, :, 2])]
 
+        # Create a mask for the areas with a color similar to the center pixel
         lower_border_arr = np.array(lower_border_arr)
         upper_border_arr = np.array(upper_border_arr)
 
-        # Create a mask for the areas with a color similar to the center pixel
-        # lower_border_arr = color - [20, 20, 20]
-        # upper_border_arr = color + [20, 20, 20]
         lower_border = tuple(lower_border_arr.tolist())
         upper_border = tuple(upper_border_arr.tolist())
 
@@ -71,13 +66,11 @@ class ColorTracker:
         if team_number == 1:
             x_player = x_center + 85
             y_player = y_center
-            # cv2.circle(img_hsv, (int(x_player), int(y_player)), 1, (0, 255, 255), 1)
-            # cv2.imwrite("croppedImage1.jpg", img_hsv)
+
         if team_number == 2:
             x_player = x_center - 85
             y_player = y_center
-            # cv2.circle(img_hsv, (int(x_player), int(y_player)), 1, (0, 255, 255), 1)
-            # cv2.imwrite("croppedImage2.jpg", img_hsv)
+
 
         # Get the color of the pixel in the image center
         color = img_hsv[y_player, x_player]
@@ -85,12 +78,10 @@ class ColorTracker:
         lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
         upper_border_arr = [np.max(colors[:, :, 0]), np.max(colors[:, :, 1]), np.max(colors[:, :, 2])]
 
+        # Create a mask for the areas with a color similar to the center pixel
         lower_border_arr = np.array(lower_border_arr)
         upper_border_arr = np.array(upper_border_arr)
 
-        # Create a mask for the areas with a color similar to the center pixel
-        # lower_border_arr = color_range - [20, 20, 20]
-        # upper_border_arr = color_range + [20, 20, 20]
         lower_border = tuple(lower_border_arr.tolist())
         upper_border = tuple(upper_border_arr.tolist())
 
@@ -145,7 +136,6 @@ class ColorTracker:
 
         return dist
 
-    ball_position_history = []
 
     def get_var(self, _type):
         """
@@ -156,7 +146,5 @@ class ColorTracker:
         """
         if 'ball_position' == _type:
             return self.curr_ball_position
-        elif 'ball_position_history' == _type:
-            return self.ball_position_history
         else:
             return ""  # False

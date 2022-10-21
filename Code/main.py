@@ -57,7 +57,7 @@ def main():
 
         calibration_image = cv2.cvtColor(cv2.imread(r"./calibration_image.JPG"), cv2.COLOR_BGR2HSV)
 
-        # The initialization is done with only a small part of theq image around the center spot.
+        # The initialization is done with only a small part of the image around the center spot.
         x1 = int(round(ball_position[0] - (calibration_image.shape[1] / 10), 0))
         x2 = int(round(ball_position[0] + (calibration_image.shape[1] / 10), 0))
         y1 = int(round(ball_position[1] - (calibration_image.shape[0] / 10), 0))
@@ -85,9 +85,9 @@ def main():
             video_shower.frame = frame
             cv2.putText(frame, "Zur Kalibrierung ausrichten und \"s\" druecken", (430, 800),
                         cv2.FONT_HERSHEY_PLAIN, 3, (30, 144, 255), 2)
-            # cv2.circle(frame, (int(frame.shape[1]/2), int(frame.shape[0]/2)), 20, (30, 144, 255), 1)
-            # cv2.circle(frame, (int(frame.shape[1]/2-85), int(frame.shape[0]/2)), 20, (30, 144, 255), 1)
-            # cv2.circle(frame, (int(frame.shape[1]/2+85), int(frame.shape[0]/2)), 20, (30, 144, 255), 1)
+            cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
+            cv2.circle(frame, (int(frame.shape[1] / 2 - 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
+            cv2.circle(frame, (int(frame.shape[1] / 2 + 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
             if keyboard.is_pressed("s"):
                 cv2.imwrite("calibration_image.JPG", frame)
             file_exists = os.path.exists("./calibration_image.JPG")
