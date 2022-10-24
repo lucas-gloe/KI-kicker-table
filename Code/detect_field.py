@@ -87,7 +87,7 @@ class DetectField:
 
         center = center_circle[0], center_circle[1]
         radius = center_circle[2]
-        ratio_pxcm = radius / 9
+        ratio_pxcm = radius / 8.5
 
         self.center = center
         self.ratio_pxcm = ratio_pxcm
@@ -101,7 +101,7 @@ class DetectField:
         :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
         """
 
-        half_field_width = 60
+        half_field_width = 62 # 60 +2 for the goalkeepers feed
         half_field_height = 34
 
         # x1 = int(self.center[0])
@@ -145,14 +145,14 @@ class DetectField:
         """
         match_field = np.array([[int(field[0][0]), int(field[0][1])],
                                 [int(field[2][0]), int(field[2][1])]])
-        goal1 = np.array([[int(match_field[0][0] - 20), int((np.linalg.norm(
+        goal1 = np.array([[int(match_field[0][0]), int((np.linalg.norm(
             (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
-                          [int(match_field[0][0] + 20), int((np.linalg.norm(
+                          [int(match_field[0][0] + 70), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
                                                                  1]) + 120)]])
-        goal2 = np.array([[int(match_field[1][0] - 20), int((np.linalg.norm(
+        goal2 = np.array([[int(match_field[1][0] - 70), int((np.linalg.norm(
             (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
-                          [int(match_field[1][0] + 20), int((np.linalg.norm(
+                          [int(match_field[1][0]), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
                                                                  1]) + 120)]])
         throw_in_zone = np.array([[int(match_field[0][0] + 400), int(match_field[0][1])],

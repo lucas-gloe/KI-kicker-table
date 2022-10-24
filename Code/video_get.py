@@ -11,11 +11,11 @@ class VideoGet:
     DEFAULT_CAM = 0
     CAMERA_1 = 1
 
-    def __init__(self, src=DEFAULT_CAM):
+    def __init__(self, src=CAMERA_1):
         self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # heigth of the frame
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame
-        self.stream.set(cv2.CAP_PROP_FPS, 120)  # FPS output from camera
+        self.stream.set(cv2.CAP_PROP_FPS, 240)  # FPS output from camera
 
         (self.grabbed, self.frame) = self.stream.read()
 
