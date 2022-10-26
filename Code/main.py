@@ -6,7 +6,6 @@ import detect_color
 import time
 import os.path
 import keyboard
-from os.path import exists
 from video_get_from_file import VideoGetFromFile
 
 import cv2
@@ -96,12 +95,13 @@ def main():
                 detected_field.get_angle(calibration_image)
                 detected_field.get_center_scale(calibration_image)
                 field = detected_field.calc_field()
+                ratio_pxcm = detected_field.get_var("ratio_pxcm")
 
                 ball_color, team1_color, team2_color = calibrate_color(frame, detected_field.get_var("center"))
                 _first_frame = False
 
         if not _first_frame:
-            frame = game.interpret_frame(frame, ball_color, field, team1_color, team2_color)
+            frame = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
             video_shower.frame = frame
 
 

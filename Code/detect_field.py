@@ -87,7 +87,8 @@ class DetectField:
 
         center = center_circle[0], center_circle[1]
         radius = center_circle[2]
-        ratio_pxcm = radius / 8.5
+        ratio_pxcm = radius / 9.4
+
 
         self.center = center
         self.ratio_pxcm = ratio_pxcm
@@ -101,8 +102,8 @@ class DetectField:
         :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
         """
 
-        half_field_width = 62 # 60 +2 for the goalkeepers feed
-        half_field_height = 34
+        half_field_width = 68 # 60 + 8 for the goalkeepers feed and goal room
+        half_field_height = 38 # 34 +4 for tollerance
 
         # x1 = int(self.center[0])
         # y1 = int(self.center[1])

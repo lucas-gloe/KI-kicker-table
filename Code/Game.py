@@ -50,6 +50,7 @@ class Game:
         self._goal2_detected = False
         self._results = True
         self._game_results = [[0, 0]]
+        self.ratio_pxcm = 0.0
         self._new_game = False
         self._show_contour = False
         self._last_speed = [0.0]
@@ -70,7 +71,7 @@ class Game:
 
     ################################ INTERPRETATION OF THE FRAME ###############################
 
-    def interpret_frame(self, frame, ball_color, field, team1_color, team2_color):
+    def interpret_frame(self, frame, ball_color, field, team1_color, team2_color, ratio_pxcm):
         """
         interpret, track and draw game properties on the frame
         """
@@ -80,19 +81,19 @@ class Game:
         self.__team1_color = team1_color
         self.__team2_color = team2_color
         self.field = field
+        self.ratio_pxcm = ratio_pxcm
 
         self._colors = [self.__ball_color, self.__team2_color, self.__team1_color]
 
         # Frame interpretation
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         self.match_field, self.goal1, self.goal2, self.throw_in_zone = self._df.load_game_field_properties(field)
-        # print("match_field", self.match_field)
-        # print("goal2", self.goal2)
         self._track_ball(hsv_img)
         self._team1_figures = self._track_players(1, 0, hsv_img)
         self._team2_figures = self._track_players(2, 1, hsv_img)
 
         self._check_keybindings()
+        self._check_variables()
 
         # track game stats
         self._count_game_score()
@@ -103,7 +104,7 @@ class Game:
         out_frame = frame.copy()
 
         # Draw results in frame
-        self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
+        # self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
         self._draw_contour_on_kicker(out_frame)
         self._draw_ball(out_frame)
         self._draw_predicted_ball(out_frame)
@@ -113,6 +114,8 @@ class Game:
         self._show_last_games(out_frame)
         self._show_ball_speed(out_frame)
         self._show_tracked_colors(out_frame)
+
+
 
         return out_frame
 
@@ -161,7 +164,7 @@ class Game:
             self._predicted = self._kf.predict(center_x, center_y)
 
         elif len(objects) == 0:
-            if self.predicted_value_added:
+            if not self.predicted_value_added:
                 self._current_ball_position = (self._predicted[0], self._predicted[1])
                 self.predicted_value_added = True
             else:
@@ -177,7 +180,6 @@ class Game:
         """
         look for objects on the dedicated mask, sort them for position ranking and save them on players_positions
         """
-        player_positions = []
 
         lower_color = np.asarray(self._colors[team_number])
         upper_color = np.asarray(self._colors[team_number])
@@ -214,8 +216,6 @@ class Game:
         """
         # outline the contours on the mask
         contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        x, y, w, h = 0, 0, 0, 0
-        white_contour = []
         objects = []
         # looping over every contour which was found
         for cnt in contours:
@@ -234,6 +234,8 @@ class Game:
                 ((self.match_field[0][0] > objects[:, 0]) | (objects[:, 0] > self.match_field[1][0])) | (
                         (self.match_field[0][1] > objects[:, 1]) | (
                         objects[:, 1] > self.match_field[1][1]))), axis=0)
+
+        objects = self.__remove_overlapping_bounding_boxes(objects)
 
         return objects
 
@@ -272,6 +274,39 @@ class Game:
             if team_rank == 1:
                 ranks = self.__reverse_ranks(ranks)
             return ranks
+
+    def __remove_overlapping_bounding_boxes(self, objects):
+        bounding_box_collections = []
+        big_bounding_box_collections = []
+        new_objects = []
+
+        objects = np.array(objects)
+        sorting = [i[0] for i in np.argsort(objects, axis=0)]
+        objects_sorted = np.array([objects[i] for i in sorting])
+
+        for i in range(len(objects_sorted)):
+
+            if i < (len(objects_sorted) - 1):
+
+                distance_x = np.linalg.norm(objects_sorted[i, 0] - objects_sorted[i + 1, 0])
+                distance_y = np.linalg.norm(objects_sorted[i, 1] - objects_sorted[i + 1, 1])
+
+                if distance_x <= 100 and distance_y <= 100:
+                    bounding_box_collections.append(objects_sorted[i])
+                else:
+                    bounding_box_collections.append(objects_sorted[i])
+                    big_bounding_box_collections.append(bounding_box_collections)
+                    bounding_box_collections = []
+            else:
+                big_bounding_box_collections.append([objects_sorted[i]])
+
+        for bounding_box_collections in big_bounding_box_collections:
+            bounding_box_collections = np.array(bounding_box_collections)
+            object = [min(bounding_box_collections[:, 0]), min(bounding_box_collections[:, 1]), sum(bounding_box_collections[:, 2]),
+                      max(bounding_box_collections[:, 3])]
+            new_objects.append(object)
+
+        return new_objects
 
     # def __calculate_balls_position(self, objects):
     #     if len(self._ball_positions) > 0:
@@ -319,34 +354,27 @@ class Game:
             self._ball_positions = []
             self._last_speed = []
 
+    def _check_variables(self):
+        if len(self._last_speed) >= 300:
+            self._last_speed.pop(0)
+        if len(self._ball_positions) >= 1000:
+            self._ball_positions.pop(0)
+
     def _count_game_score(self):
         """
         Count game score +1  of a certain team if a goal was shot
         """
         if len(self._ball_positions) > 1 and 0 < self._ball_positions[-2][0] < self.goal1[1][0] and self.goal1[0][1] < \
-                self._ball_positions[-2][1] < self.goal1[1][1] and self._ball_positions[-1] == [-1, -1] and self._ball_reenters_game:
+                self._ball_positions[-2][1] < self.goal1[1][1] and self._ball_positions[-1] == [-1, -1] and \
+                self._ball_reenters_game:
             self._goal1_detected = True
             self.goalInCurrentFrame = True
 
         if len(self._ball_positions) > 1 and self._ball_positions[-2][0] > self.goal2[0][0] and self.goal2[0][1] < \
-                self._ball_positions[-2][1] < self.goal2[1][1] and self._ball_positions[-1] == [-1, -1] and self._ball_reenters_game:
-            print("Tor erkannt")
+                self._ball_positions[-2][1] < self.goal2[1][1] and self._ball_positions[-1] == [-1, -1] and \
+                self._ball_reenters_game:
             self._goal2_detected = True
             self.goalInCurrentFrame = True
-
-        if len(self._ball_positions) > 3:
-            print("länge Ballpositionen:", len(self._ball_positions))
-            print("_ball_positions[-2][0]:", self._ball_positions[-2][0])
-            print("soll größer sein als:", self.goal2[0][0])
-            print("_ball_positions[-2][1]:", self._ball_positions[-2][1])
-            print("soll größer sein als:", self.goal2[0][1])
-            print("aber kleiner als:", self.goal2[1][1])
-            print("_ball_positions[-1]:", self._ball_positions[-1])
-            print("__ball_reenters_game:", self._ball_reenters_game)
-            print("")
-            print("_counter_team2:",self._counter_team2)
-            print("")
-
 
         if self._goal1_detected and self.goalInCurrentFrame:
             self._counter_team1 += 1
@@ -354,8 +382,6 @@ class Game:
         if self._goal2_detected and self.goalInCurrentFrame:
             self._counter_team2 += 1
             self.goalInCurrentFrame = False
-
-
 
     def _detect_ball_reentering(self):
         """
@@ -383,24 +409,24 @@ class Game:
         """
         Measure the current speed of the ball
         """
+
         if len(self._ball_positions) >= 3 and self._ball_positions[-1] != [-1, -1]:
-            # safe the current ball position into an numpyArray
+            # safe ball positions into an numpyArray
             current_position = np.array(self._ball_positions[-1])
-            # safe the current-1 ball position into an numpyArray
             middle_position = np.array(self._ball_positions[-2])
-            # safe the current-2 ball position into an numpyArray
             last_position = np.array(self._ball_positions[-3])
-            # measure the distance between the last and last-1 point of the ball
+
+            # measure the distance between the positions of the ball
             distance1 = np.linalg.norm(current_position - middle_position)
-            # measure the distance between the last-1 and last-2 point of the ball
             distance2 = np.linalg.norm(middle_position - last_position)
-            # calculate the travelled distance between 1 frame
             distance = (distance1 + distance2) / 2
-            # convert the travelled distance into real speed measuring
-            # ->Camera view on Kicker Table is 1300px x 740p at 120, Kicker Table is 1,20m x 0,68m relationship: ~1:1083
-            real_distance_per_frame = distance / 1083
-            real_distance_per_second = real_distance_per_frame * 60
-            kmh = real_distance_per_second * 3.6
+
+            # convert the travelled distance in pixel per frame into traveled distance km per hour
+            cm_distance_per_frame = distance / self.ratio_pxcm
+            m_distance_per_frame = cm_distance_per_frame / 100
+            m_distance_per_second = m_distance_per_frame / self.__counts_per_sec()
+            kmh = m_distance_per_second * 3.6
+
             kmh = round(kmh, 2)
             self._last_speed.append(kmh)
 
@@ -433,10 +459,10 @@ class Game:
             cv2.line(frame, (int(self.field[1][0]), int(self.field[1][1])),
                      (int(self.field[2][0]), int(self.field[2][1])),
                      (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(self.goal1[0][0]), int(self.goal1[0][1])), # Team1, orange
+            cv2.rectangle(frame, (int(self.goal1[0][0]), int(self.goal1[0][1])),  # Team1, orange
                           (int(self.goal1[1][0]), int(self.goal1[1][1])),
                           (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(self.goal2[0][0]), int(self.goal2[0][1])), # Team2, blau
+            cv2.rectangle(frame, (int(self.goal2[0][0]), int(self.goal2[0][1])),  # Team2, blau
                           (int(self.goal2[1][0]), int(self.goal2[1][1])),
                           (0, 255, 0), 2)
             cv2.rectangle(frame, (int(self.throw_in_zone[0][0]), int(self.throw_in_zone[0][1])),
@@ -465,7 +491,7 @@ class Game:
         """
         Draw a rectangle at the players position and name it TeamX
         """
-        if self._players_on_field[team-1]:
+        if self._players_on_field[team - 1]:
             for i, player_position in enumerate(player_positions):
                 cv2.rectangle(frame, (player_position[0], player_position[1]),
                               (player_position[0] + player_position[2], player_position[1] + player_position[3]),
@@ -500,12 +526,12 @@ class Game:
         """
         cv2.putText(frame, (str(max(self._last_speed)) + " Km/h"), (1700, 900), cv2.FONT_HERSHEY_PLAIN, 1,
                     (30, 144, 255), 2)
+        print(self._last_speed)
 
-    def _show_tracked_colors (self, frame):
+    def _show_tracked_colors(self, frame):
         """
 
         """
-
         _tracked_ball_color = np.uint8([[self._colors[0]]])
         _tracked_team1_color = np.uint8([[self._colors[1]]])
         _tracked_team2_color = np.uint8([[self._colors[2]]])
@@ -515,14 +541,17 @@ class Game:
         _tracked_team2_color = cv2.cvtColor(_tracked_team2_color, cv2.COLOR_HSV2BGR)
 
         cv2.putText(frame, ("Ball color"), (1700, 500), cv2.FONT_HERSHEY_PLAIN, 1,
-                    (30, 144, 255) , 2)
-        cv2.rectangle(frame, (1700, 510), (1750,540),
-                      (int(_tracked_ball_color[0][0][0]), int(_tracked_ball_color[0][0][1]), int(_tracked_ball_color[0][0][2])), -1)
+                    (30, 144, 255), 2)
+        cv2.rectangle(frame, (1700, 510), (1750, 540),
+                      (int(_tracked_ball_color[0][0][0]), int(_tracked_ball_color[0][0][1]),
+                       int(_tracked_ball_color[0][0][2])), -1)
         cv2.putText(frame, ("Team1 color"), (1700, 560), cv2.FONT_HERSHEY_PLAIN, 1,
                     (30, 144, 255), 2)
         cv2.rectangle(frame, (1700, 570), (1750, 600),
-                      (int(_tracked_team1_color[0][0][0]), int(_tracked_team1_color[0][0][1]), int(_tracked_team1_color[0][0][2])), -1)
+                      (int(_tracked_team1_color[0][0][0]), int(_tracked_team1_color[0][0][1]),
+                       int(_tracked_team1_color[0][0][2])), -1)
         cv2.putText(frame, ("Team2 color"), (1700, 620), cv2.FONT_HERSHEY_PLAIN, 1,
                     (30, 144, 255), 2)
         cv2.rectangle(frame, (1700, 630), (1750, 660),
-                      (int(_tracked_team2_color[0][0][0]), int(_tracked_team2_color[0][0][1]), int(_tracked_team2_color[0][0][2])), -1)
+                      (int(_tracked_team2_color[0][0][0]), int(_tracked_team2_color[0][0][1]),
+                       int(_tracked_team2_color[0][0][2])), -1)

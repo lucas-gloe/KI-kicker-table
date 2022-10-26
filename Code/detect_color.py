@@ -102,40 +102,6 @@ class ColorTracker:
             self.team2_color = tuple(av)
             return self.team2_color
 
-    def _check_circle(self, points):
-        """
-        Calculates a comparison value with a circle.
-        First, it normalizes the given points, so that their mean is the origin and their distance to the origin
-        is 1 in average.
-        Then it averages the differences between the points' distance to the origin and 1.
-        The resulting value is 0 when the points form a circle, and increases, if there is any deformation.
-        It has no upper limit, but will not be smaller than 0.
-        To sum up: the lower the value, the better fit the points to a circle
-        :param points: the points that mark the contour to check
-        :return: Comparison value.
-        """
-        # Split x- and y-Values into two arrays
-        x_vals, y_vals = [], []
-        for point in points:
-            x_vals.append(point[0])
-            y_vals.append(point[1])
-
-        # Shift the circle center to (0,0)
-        x_vals = x_vals - np.mean(x_vals)
-        y_vals = y_vals - np.mean(y_vals)
-
-        # Bring the circle radius to 1
-        radius = np.sqrt((np.sum(x_vals ** 2 + y_vals ** 2)) / len(x_vals))
-        for point in range(0, len(x_vals)):
-            x_vals[point] = x_vals[point] / radius
-            y_vals[point] = y_vals[point] / radius
-
-        # Now the result is compared to a unit circle (radius 1), and the
-        # differences are averaged.
-        dist = np.mean(np.abs(x_vals ** 2 + y_vals ** 2 - 1))
-
-        return dist
-
 
     def get_var(self, _type):
         """
