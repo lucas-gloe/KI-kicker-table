@@ -14,6 +14,7 @@ class DetectField:
     ratio_pxcm = 0
     angle = 0
 
+
     def get_angle(self, calibration_image):
         """
         :param calibration_image: The HSV-image to use for calculation
@@ -89,7 +90,6 @@ class DetectField:
         radius = center_circle[2]
         ratio_pxcm = radius / 9.4
 
-
         self.center = center
         self.ratio_pxcm = ratio_pxcm
 
@@ -102,8 +102,8 @@ class DetectField:
         :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
         """
 
-        half_field_width = 68 # 60 + 8 for the goalkeepers feed and goal room
-        half_field_height = 38 # 34 +4 for tollerance
+        half_field_width = 68  # 60 + 8 for the goalkeepers feed and goal room
+        half_field_height = 38  # 34 +4 for tollerance
 
         # x1 = int(self.center[0])
         # y1 = int(self.center[1])
@@ -155,11 +155,30 @@ class DetectField:
             (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
                           [int(match_field[1][0]), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                                 1]) + 120)]])
+                                                            1]) + 120)]])
         throw_in_zone = np.array([[int(match_field[0][0] + 400), int(match_field[0][1])],
                                   [int(match_field[1][0] - 400), int(match_field[1][1])]])
 
-        return [match_field, goal1, goal2, throw_in_zone]
+        distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / 8
+
+        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-15)+19), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (0.5*distance_between_rods+15)+19), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (1.5*distance_between_rods-15)+13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (1.5*distance_between_rods+15)+13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (2.5*distance_between_rods-15)+13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (2.5*distance_between_rods+15)+13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (3.5*distance_between_rods-15)+4), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (3.5*distance_between_rods+15)+4), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (4.5*distance_between_rods-15)-4), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (4.5*distance_between_rods+15)-4), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (5.5*distance_between_rods-15)-13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (5.5*distance_between_rods+15)-13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (6.5*distance_between_rods-15)-13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (6.5*distance_between_rods+15)-13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (7.5*distance_between_rods-15)-19), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (7.5*distance_between_rods+15)-19), int(match_field[1][1])]]])
+
+        return [match_field, goal1, goal2, throw_in_zone, players_rods]
 
     def get_var(self, _type):
         """

@@ -1,13 +1,13 @@
 from game import Game
 from video_get import VideoGet
 from video_show import VideoShow
+from video_get_from_file import VideoGetFromFile
+
 import detect_field
 import detect_color
 import time
 import os.path
 import keyboard
-from video_get_from_file import VideoGetFromFile
-
 import cv2
 
 
@@ -31,12 +31,10 @@ def main():
     # calibration_image = cv2.imread(r"../Bilder/test/calibration_image.PNG")
 
     def calibrate_color(frame, ball_position):
-        # The user has to put the ball onto the center spot for calibration.
-        # A marker cross will appear on the center spot for some time.
+        """
 
-        # At the moment the color calibration is done using a fixed image, that has
-        # to be cropped to the right size.
-        # Therefore, the size of the images from the camera is needed.
+        """
+        # The user has to put the ball onto the center spot for calibration.
         t_end = time.time()  # + 1
         _done = 0
         # When the fixed image is used for calibration, at least one execution is

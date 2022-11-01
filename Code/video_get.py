@@ -12,6 +12,9 @@ class VideoGet:
     CAMERA_1 = 1
 
     def __init__(self, src=CAMERA_1):
+        """
+
+        """
         self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # heigth of the frame
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame
@@ -22,10 +25,16 @@ class VideoGet:
         self.stopped = False
 
     def start(self):
+        """
+
+        """
         Thread(target=self.get, args=()).start()
         return self
 
     def get(self):
+        """
+
+        """
         while not self.stopped:
             if not self.grabbed:
                 self.stop()
@@ -33,4 +42,7 @@ class VideoGet:
                 (self.grabbed, self.frame) = self.stream.read()
 
     def stop(self):
+        """
+
+        """
         self.stopped = True

@@ -6,6 +6,7 @@ import numpy as np
 
 from kalman_filter import KalmanFilter
 from detect_field import DetectField
+from detect_color import ColorTracker
 
 
 class Game:
@@ -14,12 +15,14 @@ class Game:
     """
 
     ################################# INITIALIZE GAME CLASS ####################################
+
     def __init__(self):
         """
         Initialize game variables and properties
         """
         self._start_time = None
         self._num_occurrences = 0
+        self.results_from_calibration = True
         self._first_frame = True
         self._values = [[], []]
         self._pixel = (0, 0, 0)
@@ -31,14 +34,18 @@ class Game:
         self.__ball_color = []
         self.__team1_color = []
         self.__team2_color = []
+        self.__recalibrated_ball_color = []
+        self.ball_was_found = False
         self._kf = KalmanFilter()
         self._df = DetectField()
+        self._dc = ColorTracker()
         self._players_on_field = [False, False]
         self.field = []
         self.match_field = []
         self.goal1 = []
         self.goal2 = []
         self.throw_in_zone = []
+        self.players_rods = np.array([])
         self._ranked = [[], []]
         self._team1_figures = []
         self._team2_figures = []
@@ -77,20 +84,23 @@ class Game:
         """
         # define colors from calibration
         self._num_occurrences += 1
-        self.__ball_color = ball_color
-        self.__team1_color = team1_color
-        self.__team2_color = team2_color
-        self.field = field
-        self.ratio_pxcm = ratio_pxcm
+        if self.results_from_calibration:
+            self.__ball_color = ball_color
+            self.__team1_color = team1_color
+            self.__team2_color = team2_color
+            self.field = field
+            self.ratio_pxcm = ratio_pxcm
+            self.results_from_calibration = False
+
 
         self._colors = [self.__ball_color, self.__team2_color, self.__team1_color]
 
         # Frame interpretation
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        self.match_field, self.goal1, self.goal2, self.throw_in_zone = self._df.load_game_field_properties(field)
-        self._track_ball(hsv_img)
+        self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(field)
         self._team1_figures = self._track_players(1, 0, hsv_img)
         self._team2_figures = self._track_players(2, 1, hsv_img)
+        self._track_ball(hsv_img)
 
         self._check_keybindings()
         self._check_variables()
@@ -104,7 +114,7 @@ class Game:
         out_frame = frame.copy()
 
         # Draw results in frame
-        # self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
+        self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
         self._draw_contour_on_kicker(out_frame)
         self._draw_ball(out_frame)
         self._draw_predicted_ball(out_frame)
@@ -114,8 +124,6 @@ class Game:
         self._show_last_games(out_frame)
         self._show_ball_speed(out_frame)
         self._show_tracked_colors(out_frame)
-
-
 
         return out_frame
 
@@ -127,10 +135,17 @@ class Game:
         """
         look for objects in the dedicated mask, save the center position of the balls position
         """
-        lower_color = np.asarray(self._colors[0])
-        upper_color = np.asarray(self._colors[0])
-        lower_color = lower_color - [10, 50, 50]  # good values (for test video are 10,50,50)
-        upper_color = upper_color + [10, 50, 50]  # good values (for test video are 10,50,50)
+        ball_color = self._colors[0]
+
+        if not self.results_from_calibration and self.ball_was_found:
+            ball_color = [int((self._colors[0][0] + self.__recalibrated_ball_color[0]) / 2),
+                          int((self._colors[0][1] + self.__recalibrated_ball_color[1]) / 2),
+                          int((self._colors[0][2] + self.__recalibrated_ball_color[2]) / 2)]
+
+        lower_color = np.asarray(ball_color)
+        upper_color = np.asarray(ball_color)
+        lower_color = lower_color - [10, 50, 50]
+        upper_color = upper_color + [10, 50, 50]
         lower_color[lower_color < 0] = 0
         lower_color[lower_color > 255] = 255
         upper_color[upper_color < 0] = 0
@@ -142,7 +157,6 @@ class Game:
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
         mask = self.__smooth_ball_mask(mask)
 
-        # mask = cv2.inRange(hsv_img, np.array(self._colors[0][0:3]), np.array(self._colors[0][3:6]))
         objects = self.__find_objects(mask)
 
         if len(objects) == 1:
@@ -161,15 +175,21 @@ class Game:
             # save the current position of the ball into an array
             self._current_ball_position = [center_x, center_y]
 
+            # recalibrate ball color in current frame
+            self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y, self._team1_figures, self._team2_figures, self.players_rods)
+            self.ball_was_found = True
+
             self._predicted = self._kf.predict(center_x, center_y)
 
         elif len(objects) == 0:
             if not self.predicted_value_added:
                 self._current_ball_position = (self._predicted[0], self._predicted[1])
                 self.predicted_value_added = True
+                self.ball_was_found = False
             else:
                 print("Ball nicht erkannt")
                 self._current_ball_position = [-1, -1]
+                self.ball_was_found = False
         else:
             # self.__calculate_balls_position(objects)
             self._current_ball_position = [-1, -1]
@@ -180,7 +200,6 @@ class Game:
         """
         look for objects on the dedicated mask, sort them for position ranking and save them on players_positions
         """
-
         lower_color = np.asarray(self._colors[team_number])
         upper_color = np.asarray(self._colors[team_number])
         lower_color = lower_color - [10, 50, 50]  # good values (for test video are 10,50,50)
@@ -195,7 +214,6 @@ class Game:
 
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
 
-        # mask = cv2.inRange(hsv_img, np.array(self._colors[team_number][0:3]), np.array(self._colors[team_number][3:6]))
         objects = self.__find_objects(mask)
         if len(objects) >= 1:
             self._players_on_field[team_rank] = True
@@ -205,7 +223,7 @@ class Game:
 
         elif len(objects) == 0:
             self._players_on_field[team_rank] = False
-            print("Spieler nicht erkannt")
+            print("Team " + str(team_rank) + " nicht erkannt")
             return []
 
     def __find_objects(self, mask):
@@ -276,6 +294,9 @@ class Game:
             return ranks
 
     def __remove_overlapping_bounding_boxes(self, objects):
+        """
+
+        """
         bounding_box_collections = []
         big_bounding_box_collections = []
         new_objects = []
@@ -302,7 +323,8 @@ class Game:
 
         for bounding_box_collections in big_bounding_box_collections:
             bounding_box_collections = np.array(bounding_box_collections)
-            object = [min(bounding_box_collections[:, 0]), min(bounding_box_collections[:, 1]), sum(bounding_box_collections[:, 2]),
+            object = [min(bounding_box_collections[:, 0]), min(bounding_box_collections[:, 1]),
+                      sum(bounding_box_collections[:, 2]),
                       max(bounding_box_collections[:, 3])]
             new_objects.append(object)
 
@@ -330,11 +352,13 @@ class Game:
     #         self._current_ball_position = [-1, -1]
 
     def __reverse_ranks(self, ranks):
-        gesamtlaenge = len(ranks)
+        """
+        
+        """
         reversed_ranks = []
 
         for rank in ranks:
-            place = (gesamtlaenge - 1) - rank
+            place = (len(ranks) - 1) - rank
             reversed_ranks.append(place)
 
         return reversed_ranks
@@ -355,7 +379,7 @@ class Game:
             self._last_speed = []
 
     def _check_variables(self):
-        if len(self._last_speed) >= 300:
+        if len(self._last_speed) >= 200:
             self._last_speed.pop(0)
         if len(self._ball_positions) >= 1000:
             self._ball_positions.pop(0)
@@ -409,7 +433,6 @@ class Game:
         """
         Measure the current speed of the ball
         """
-
         if len(self._ball_positions) >= 3 and self._ball_positions[-1] != [-1, -1]:
             # safe ball positions into an numpyArray
             current_position = np.array(self._ball_positions[-1])
@@ -441,12 +464,9 @@ class Game:
 
     def _draw_contour_on_kicker(self, frame):
         """
-        Add football field contour for calibration on frame
+        show football field contour for calibration on frame if a certain button was pressed
         """
         if self._show_contour:
-            # cv2.rectangle(frame, (int(self.match_field[0][0]), int(self.match_field[0][1])),
-            #               (int(self.match_field[1][0]), int(self.match_field[1][1])),
-            #               (0, 255, 0), 2)
             cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
                      (int(self.field[1][0]), int(self.field[1][1])),
                      (0, 255, 0), 2)
@@ -468,6 +488,9 @@ class Game:
             cv2.rectangle(frame, (int(self.throw_in_zone[0][0]), int(self.throw_in_zone[0][1])),
                           (int(self.throw_in_zone[1][0]), int(self.throw_in_zone[1][1])),
                           (0, 255, 0), 2)
+            for rod in self.players_rods:
+                cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
+                              (int(rod[1][0]), int(rod[1][1])), (0, 255, 0), 2)
 
     def _draw_ball(self, frame):
         """
@@ -526,7 +549,7 @@ class Game:
         """
         cv2.putText(frame, (str(max(self._last_speed)) + " Km/h"), (1700, 900), cv2.FONT_HERSHEY_PLAIN, 1,
                     (30, 144, 255), 2)
-        print(self._last_speed)
+        # print(self._last_speed[-5:-1])
 
     def _show_tracked_colors(self, frame):
         """
