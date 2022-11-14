@@ -68,15 +68,15 @@ class ColorTracker:
 
         for pixel in ball_pixels:
             for team1_figure in team1_figures:
-                if (team1_figure[0] < pixel[0] < (team1_figure[0] + team1_figure[2])) and (
-                        team1_figure[1] < pixel[1] < (team1_figure[1] + team1_figure[3])):
+                if (team1_figure[0][0] < pixel[0] < team1_figure[0][0]) and (
+                        team1_figure[0][1] < pixel[1] < team1_figure[1][1]):
                     collabs.append(True)
                 else:
                     collabs.append(False)
 
             for team2_figure in team2_figures:
-                if (team2_figure[0] < pixel[0] < (team2_figure[0] + team2_figure[2])) and (
-                        team2_figure[1] < pixel[1] < (team2_figure[1] + team2_figure[3])):
+                if (team2_figure[0][0] < pixel[0] < team2_figure[1][0]) and (
+                        team2_figure[0][1] < pixel[1] < team2_figure[1][1]):
                     collabs.append(True)
                 else:
                     collabs.append(False)
@@ -93,7 +93,6 @@ class ColorTracker:
             collabs = []
 
         checked_pixels = np.array(checked_ball_pixels)
-
 
         if len(checked_pixels) >= 1:
             checked_pixels_x = checked_pixels[:, 0]

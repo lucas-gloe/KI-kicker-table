@@ -161,22 +161,22 @@ class DetectField:
 
         distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / 8
 
-        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-15)+19), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (0.5*distance_between_rods+15)+19), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (1.5*distance_between_rods-15)+13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (1.5*distance_between_rods+15)+13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (2.5*distance_between_rods-15)+13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (2.5*distance_between_rods+15)+13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (3.5*distance_between_rods-15)+4), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (3.5*distance_between_rods+15)+4), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (4.5*distance_between_rods-15)-4), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (4.5*distance_between_rods+15)-4), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (5.5*distance_between_rods-15)-13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (5.5*distance_between_rods+15)-13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (6.5*distance_between_rods-15)-13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (6.5*distance_between_rods+15)-13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (7.5*distance_between_rods-15)-19), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (7.5*distance_between_rods+15)-19), int(match_field[1][1])]]])
+        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-13)+22), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (0.5*distance_between_rods+13)+22), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (1.5*distance_between_rods-13)+14), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (1.5*distance_between_rods+13)+14), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (2.5*distance_between_rods-13)+13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (2.5*distance_between_rods+13)+13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (3.5*distance_between_rods-13)+4), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (3.5*distance_between_rods+13)+4), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (4.5*distance_between_rods-13)-4), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (4.5*distance_between_rods+13)-4), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (5.5*distance_between_rods-13)-13), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (5.5*distance_between_rods+13)-13), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (6.5*distance_between_rods-13)-14), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (6.5*distance_between_rods+13)-14), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (7.5*distance_between_rods-13)-22), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (7.5*distance_between_rods+13)-22), int(match_field[1][1])]]])
 
         return [match_field, goal1, goal2, throw_in_zone, players_rods]
 

@@ -14,6 +14,12 @@ class Game:
     Class that tracks the game and his properties
     """
 
+    # constances
+
+    global RODWIDTH, HALF_PLAYERS_WIDTH
+    RODWIDTH = 70
+    HALF_PLAYERS_WIDTH = 20
+
     ################################# INITIALIZE GAME CLASS ####################################
 
     def __init__(self):
@@ -46,6 +52,7 @@ class Game:
         self.goal2 = []
         self.throw_in_zone = []
         self.players_rods = np.array([])
+        self._granted_players_areas_around_rods = []
         self._ranked = [[], []]
         self._team1_figures = []
         self._team2_figures = []
@@ -92,14 +99,15 @@ class Game:
             self.ratio_pxcm = ratio_pxcm
             self.results_from_calibration = False
 
-
         self._colors = [self.__ball_color, self.__team2_color, self.__team1_color]
 
         # Frame interpretation
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(field)
-        self._team1_figures = self._track_players(1, 0, hsv_img)
-        self._team2_figures = self._track_players(2, 1, hsv_img)
+        self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(
+            field)
+        self._load_players_area()
+        self._team1_figures = self._track_players(1, hsv_img)
+        self._team2_figures = self._track_players(2, hsv_img)
         self._track_ball(hsv_img)
 
         self._check_keybindings()
@@ -118,8 +126,8 @@ class Game:
         self._draw_contour_on_kicker(out_frame)
         self._draw_ball(out_frame)
         self._draw_predicted_ball(out_frame)
-        self._draw_figures(out_frame, self._team1_figures, team=1)
-        self._draw_figures(out_frame, self._team2_figures, team=2)
+        self._draw_figures(out_frame, self._team1_figures, 1)
+        self._draw_figures(out_frame, self._team2_figures, 2)
         self._show_game_score(out_frame)
         self._show_last_games(out_frame)
         self._show_ball_speed(out_frame)
@@ -157,7 +165,8 @@ class Game:
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
         mask = self.__smooth_ball_mask(mask)
 
-        objects = self.__find_objects(mask)
+        objects = self.__find_objects(mask, -1)
+        objects.flatten()
 
         if len(objects) == 1:
 
@@ -176,7 +185,9 @@ class Game:
             self._current_ball_position = [center_x, center_y]
 
             # recalibrate ball color in current frame
-            self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y, self._team1_figures, self._team2_figures, self.players_rods)
+            self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y,
+                                                                             self._team1_figures, self._team2_figures,
+                                                                             self.players_rods)
             self.ball_was_found = True
 
             self._predicted = self._kf.predict(center_x, center_y)
@@ -196,7 +207,7 @@ class Game:
 
         self._ball_positions.append(self._current_ball_position)
 
-    def _track_players(self, team_number, team_rank, hsv_img):
+    def _track_players(self, team_number, hsv_img):
         """
         look for objects on the dedicated mask, sort them for position ranking and save them on players_positions
         """
@@ -214,19 +225,19 @@ class Game:
 
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
 
-        objects = self.__find_objects(mask)
+        objects = self.__find_objects(mask, team_number)
         if len(objects) >= 1:
-            self._players_on_field[team_rank] = True
-            self._ranked[team_rank] = self.__load_players_names(objects, team_rank)
+            self._players_on_field[team_number - 1] = True
+            self._ranked[team_number - 1] = self.__load_players_names(objects, team_number)
             player_positions = objects
             return player_positions
 
         elif len(objects) == 0:
-            self._players_on_field[team_rank] = False
-            print("Team " + str(team_rank) + " nicht erkannt")
+            self._players_on_field[team_number - 1] = False
+            print("Team " + str(team_number) + " nicht erkannt")
             return []
 
-    def __find_objects(self, mask):
+    def __find_objects(self, mask, team_number):
         """
         tracking algorithm to find the contours on the masks
         return: Contours on the masks
@@ -253,7 +264,8 @@ class Game:
                         (self.match_field[0][1] > objects[:, 1]) | (
                         objects[:, 1] > self.match_field[1][1]))), axis=0)
 
-        objects = self.__remove_overlapping_bounding_boxes(objects)
+        if team_number == 1 or team_number == 2:
+            objects = self.__remove_overlapping_bounding_boxes(objects, team_number)
 
         return objects
 
@@ -278,57 +290,77 @@ class Game:
 
         return mask
 
-    def __load_players_names(self, objects, team_rank):
+    def __load_players_names(self, objects, team_number):
         """
         take the position of alle players of a team and rank them sorted from the position of the field
         Return: Array with sorted list of players ranks
         """
         if len(objects) > 0:
             position_matrix = np.array(objects)
-            valued_matrix = position_matrix[:, 0] * 10 + position_matrix[:, 1]
+            valued_matrix = position_matrix[:, 0, 0] * 10 + position_matrix[:, 0, 1]
             sorted_valued_matrix = valued_matrix.argsort()
             ranks = np.empty_like(sorted_valued_matrix)
             ranks[sorted_valued_matrix] = np.arange(len(valued_matrix))
-            if team_rank == 1:
+            if team_number == 2:
                 ranks = self.__reverse_ranks(ranks)
             return ranks
 
-    def __remove_overlapping_bounding_boxes(self, objects):
+    def _load_players_area(self):
+        for rod in self.players_rods:
+            granted_players_area = [[rod[0][0] - RODWIDTH, rod[0][1]], [rod[1][0] + RODWIDTH, rod[1][1]]]
+            self._granted_players_areas_around_rods.append(granted_players_area)
+
+    def __get_rod(self, x):
+        for i, rod in enumerate(self.players_rods):
+            if rod[0][0] - RODWIDTH <= x <= rod[1][0] + RODWIDTH:
+                return i
+        return -1
+
+    def __remove_overlapping_bounding_boxes(self, objects, team_number):
         """
-
+        check if a player was detected with more than one bounding box. If so combine these boxes to one big box
+        so every player is only detected once
         """
-        bounding_box_collections = []
-        big_bounding_box_collections = []
-        new_objects = []
+        _max_bounding_boxes = []
+        for contour in objects:
+            y_mid = contour[1] + contour[3] / 2
 
-        objects = np.array(objects)
-        sorting = [i[0] for i in np.argsort(objects, axis=0)]
-        objects_sorted = np.array([objects[i] for i in sorting])
+            left_corner_x = contour[0]
+            left_corner_y = y_mid - HALF_PLAYERS_WIDTH
+            right_corner_x = (contour[0] + contour[2])
+            right_corner_y = y_mid + HALF_PLAYERS_WIDTH
+            max_box = [[left_corner_x, left_corner_y], [right_corner_x, right_corner_y]]
+            _max_bounding_boxes.append(max_box)
 
-        for i in range(len(objects_sorted)):
+        np.zeros((len(_max_bounding_boxes), len(_max_bounding_boxes)))
 
-            if i < (len(objects_sorted) - 1):
+        i = 0
 
-                distance_x = np.linalg.norm(objects_sorted[i, 0] - objects_sorted[i + 1, 0])
-                distance_y = np.linalg.norm(objects_sorted[i, 1] - objects_sorted[i + 1, 1])
+        while i < len(_max_bounding_boxes):
+            for j, max_box2 in enumerate(_max_bounding_boxes[i + 1:]):
+                if (self.__get_rod((_max_bounding_boxes[i][0][0] + (
+                        abs(_max_bounding_boxes[i][0][0] -_max_bounding_boxes[i][1][0]) / 2))) == self.__get_rod(
+                        (max_box2[0][0] + (abs(max_box2[0][0] - max_box2[1][0]) / 2))) and (
+                        (max_box2[0][1] <= _max_bounding_boxes[i][0][1] <= max_box2[1][1]) or (
+                        max_box2[0][1] <= _max_bounding_boxes[i][1][1] <= max_box2[1][1]))):
+                    _max_bounding_boxes[i] = [
+                        [min(_max_bounding_boxes[i][0][0], max_box2[0][0]),
+                         int(min(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
+                                 max_box2[1][1]))],
+                        [max(_max_bounding_boxes[i][1][0], max_box2[1][0]),
+                         int(max(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
+                                 max_box2[1][1]))]]
+                    _max_bounding_boxes.pop(i + 1 + j)
+                    i = i - 1
+                    break
+            i = i + 1
 
-                if distance_x <= 100 and distance_y <= 100:
-                    bounding_box_collections.append(objects_sorted[i])
-                else:
-                    bounding_box_collections.append(objects_sorted[i])
-                    big_bounding_box_collections.append(bounding_box_collections)
-                    bounding_box_collections = []
-            else:
-                big_bounding_box_collections.append([objects_sorted[i]])
-
-        for bounding_box_collections in big_bounding_box_collections:
-            bounding_box_collections = np.array(bounding_box_collections)
-            object = [min(bounding_box_collections[:, 0]), min(bounding_box_collections[:, 1]),
-                      sum(bounding_box_collections[:, 2]),
-                      max(bounding_box_collections[:, 3])]
-            new_objects.append(object)
-
-        return new_objects
+        if team_number == 1:
+            _max_bounding_boxes_team_1 = _max_bounding_boxes
+            return _max_bounding_boxes_team_1
+        if team_number == 2:
+            _max_bounding_boxes_team_2 = _max_bounding_boxes
+            return _max_bounding_boxes_team_2
 
     # def __calculate_balls_position(self, objects):
     #     if len(self._ball_positions) > 0:
@@ -353,7 +385,7 @@ class Game:
 
     def __reverse_ranks(self, ranks):
         """
-        
+        Laod players ranks for the opposite team, so the counter always starts at the goalkeeper
         """
         reversed_ranks = []
 
@@ -490,7 +522,10 @@ class Game:
                           (0, 255, 0), 2)
             for rod in self.players_rods:
                 cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
-                              (int(rod[1][0]), int(rod[1][1])), (0, 255, 0), 2)
+                              (int(rod[1][0]), int(rod[1][1])), (0, 255, 255), 2)
+            for area in self._granted_players_areas_around_rods:
+                cv2.rectangle(frame, (int(area[0][0]), int(area[0][1])),
+                              (int(area[1][0]), int(area[1][1])), (0, 255, 255), 2)
 
     def _draw_ball(self, frame):
         """
@@ -510,17 +545,20 @@ class Game:
         if self._current_ball_position == [-1, -1]:
             cv2.circle(frame, (self._predicted[0], self._predicted[1]), 16, (0, 255, 255), 2)
 
-    def _draw_figures(self, frame, player_positions, team):
+    def _draw_figures(self, frame, player_positions, team_number):
         """
         Draw a rectangle at the players position and name it TeamX
         """
-        if self._players_on_field[team - 1]:
+        if self._players_on_field[team_number - 1]:
             for i, player_position in enumerate(player_positions):
-                cv2.rectangle(frame, (player_position[0], player_position[1]),
-                              (player_position[0] + player_position[2], player_position[1] + player_position[3]),
+                cv2.rectangle(frame, (int(player_position[0][0]), int(player_position[0][1])),
+                              (int(player_position[1][0]), int(player_position[1][1])),
                               (0, 255, 0), 2)
-                cv2.putText(frame, ("Team" + str(team) + ", " + str(self._ranked[team - 1][i])),
-                            (player_position[0], player_position[1]), cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
+                cv2.putText(frame,
+                            ("Team" + str(team_number) + ", " + str(self._ranked[team_number - 1][i]) + " Rod:" + str(
+                                self.__get_rod(player_position[0][0]))),
+                            (int(player_position[0][0]), int(player_position[0][1])), cv2.FONT_HERSHEY_PLAIN, 1,
+                            (30, 144, 255), 2)
 
     def _show_game_score(self, frame):
         """
