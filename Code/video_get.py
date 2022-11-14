@@ -7,14 +7,17 @@ class VideoGet:
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
-
+    # constances
     DEFAULT_CAM = 0
     CAMERA_1 = 1
+
 
     def __init__(self, src=CAMERA_1):
         """
 
         """
+        # for camera uses
+
         self.stream = cv2.VideoCapture(src)
         self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # heigth of the frame
         self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame

@@ -12,14 +12,15 @@ class VideoGetFromFile:
     # VIDEO_FILE = "../Video/1080p/120fps/lang.MP4"
     # VIDEO_FILE = "../Video/720p/60fps/60fps.MOV"
     VIDEO_FILE = "../Video/1080p/240fps/240 länger.MP4"
+    PICTURE = "../Code/calibration_image.JPG"
+    def __init__(self, src=PICTURE):
 
-    def __init__(self, src=VIDEO_FILE):
-        self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # height of the frame
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame
-        # self.stream.set(cv2.CAP_PROP_FPS, 30) #FPS output from camera
+        self.stream = cv2.imread("../Code/calibration_image.JPG")
+        #self.stream = cv2.imread("../Video/1080p/240fps/240 länger.MP4")
 
-        (self.grabbed, self.frame) = self.stream.read()
+        self.frame = self.stream
+        # if self.frame == self.stream:
+        self.grabbed = True
 
         self.stopped = False
 
@@ -32,7 +33,8 @@ class VideoGetFromFile:
             if not self.grabbed:
                 self.stop()
             else:
-                (self.grabbed, self.frame) = self.stream.read()
+                self.stopped, self.frame = self.stream
+                self.stopped = True
 
     def stop(self):
         self.stopped = True
