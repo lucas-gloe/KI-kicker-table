@@ -27,9 +27,9 @@ class VideoShow:
         """
         while not self.stopped:
             cv2.imshow("Video", self.frame)
-            cv2.waitKey(0)
-            #if cv2.waitKey(1) == ord("q"):
-            #    self.stopped = True
+            #cv2.waitKey(0)
+            if cv2.waitKey(1) == ord("q"):
+                self.stopped = True
 
     def stop(self):
         """

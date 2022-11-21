@@ -2,6 +2,7 @@ from game import Game
 from video_get import VideoGet
 from video_show import VideoShow
 from video_get_from_file import VideoGetFromFile
+from gui import GUI
 
 import detect_field
 import detect_color
@@ -13,16 +14,15 @@ import cv2
 
 def main():
     """
-    Dedicated thread for grabbing video frames with VideoGet object.
-    Dedicated thread for showing video frames with VideoShow object.
+    Dedicated thread for g
+    howing video frames with VideoShow object.
     Main thread serves only to pass frames between VideoGet and
     VideoShow objects/threads.
     """
-
-    _first_frame = True
-    file_exists = False
-    #video_getter = VideoGet(VideoGet.CAMERA_1).start()
-    video_getter = VideoGetFromFile(VideoGetFromFile.PICTURE).start()
+    first_frame = True
+    start_gui = True
+    video_getter = VideoGet(VideoGet.CAMERA_1).start()
+    #video_getter = VideoGetFromFile(VideoGetFromFile.PICTURE).start()
     video_shower = VideoShow(video_getter.frame).start()
     game = Game().start()
 
@@ -61,8 +61,6 @@ def main():
 
         image_crop = calibration_image[y1:y2, x1:x2]
 
-        # cv2.imwrite("croppedImage.jpg", image_crop)
-
         ball_color = detected_color.calibrate_ball_color(image_crop)
         team1_color = detected_color.calibrate_team_color(image_crop, 1)
         team2_color = detected_color.calibrate_team_color(image_crop, 2)
@@ -73,11 +71,12 @@ def main():
         if video_getter.stopped or video_shower.stopped:
             video_shower.stop()
             video_getter.stop()
+            gui.stop()
             break
 
         frame = video_getter.frame
 
-        if _first_frame:
+        if first_frame:
             file_exists = os.path.exists("./calibration_image.JPG")
             if file_exists:
                 calibration_image = cv2.imread(r"./calibration_image.JPG")
@@ -86,19 +85,22 @@ def main():
                 field = detected_field.calc_field()
                 ratio_pxcm = detected_field.get_var("ratio_pxcm")
                 ball_color, team1_color, team2_color = calibrate_color(calibration_image, detected_field.get_var("center"))
-                _first_frame = False
-            if _first_frame:
+                first_frame = False
+            if first_frame:
                 video_shower.frame = frame
-                cv2.putText(frame, "Zur Kalibrierung ausrichten und \"s\" druecken", (430, 800),
-                            cv2.FONT_HERSHEY_PLAIN, 3, (30, 144, 255), 2)
                 cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
                 cv2.circle(frame, (int(frame.shape[1] / 2 - 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
                 cv2.circle(frame, (int(frame.shape[1] / 2 + 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
                 if keyboard.is_pressed("s"):
                     cv2.imwrite("calibration_image.JPG", frame)
 
-        if not _first_frame:
+        if not first_frame:
             frame = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
+            if start_gui:
+                gui = GUI(game).start()
+                start_gui = False
+            if not start_gui:
+                gui.frame = frame
             video_shower.frame = frame
 
 

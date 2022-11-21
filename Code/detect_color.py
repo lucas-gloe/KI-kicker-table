@@ -3,7 +3,7 @@ import numpy as np
 
 
 class ColorTracker:
-    # --- color detection in a single image --- #
+    # --- color detection in a single frame --- #
 
     ball_detection_threshold = 0.2
     interface = 0
