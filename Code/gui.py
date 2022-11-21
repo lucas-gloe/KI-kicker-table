@@ -102,13 +102,18 @@ class GUI:
 
         ################# final gui layout #################
 
-        game_info = [
-            [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 550))],
-            [sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 300))]
-        ]
+        # game_info = [
+        #     [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 550))],
+        #     [sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 300))]
+        # ]
+
+        # self._layout = [
+        #     [sg.Frame("", game_frame, border_width=0, expand_x=True, expand_y=True, size=(1400, 700)),sg.Frame("", game_info, border_width=0, expand_x=True, expand_y=True)]
+        # ]
 
         self._layout = [
-            [sg.Frame("", game_frame, border_width=0, expand_x=True, expand_y=True, size=(1400, 700)),sg.Frame("", game_info, border_width=0, expand_x=True, expand_y=True)]
+            [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 600)),
+            sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 600))]
         ]
 
     def start(self):
@@ -131,7 +136,7 @@ class GUI:
 
     def update_gui(self):
         """update values on gui window"""
-        self.window["-frame-"].update(data=cv2.imencode('.ppm', self.frame)[1].tobytes())
+        #self.window["-frame-"].update(data=cv2.imencode('.ppm', self.frame)[1].tobytes())
         self.window["-team_1-"].update(background_color=self.game.check_game_var("-team_1-"))
         self.window["-team_2-"].update(background_color=self.game.check_game_var("-team_2-"))
         self.window["-ball-"].update(background_color=self.game.check_game_var("-ball-"))

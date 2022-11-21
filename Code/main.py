@@ -21,8 +21,8 @@ def main():
     """
     first_frame = True
     start_gui = True
-    video_getter = VideoGet(VideoGet.CAMERA_1).start()
-    #video_getter = VideoGetFromFile(VideoGetFromFile.PICTURE).start()
+    #video_getter = VideoGet(VideoGet.CAMERA_1).start()
+    video_getter = VideoGetFromFile(VideoGetFromFile.PICTURE).start()
     video_shower = VideoShow(video_getter.frame).start()
     game = Game().start()
 
