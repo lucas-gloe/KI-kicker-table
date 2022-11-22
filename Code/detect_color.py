@@ -13,6 +13,9 @@ class ColorTracker:
     team2_color = (-1, -1, -1)
     curr_ball_position = (-1, -1)
 
+    def __init__(self):
+        self.SCALE_FACTOR = 60
+
     def calibrate_ball_color(self, img_hsv):
         """
         Calibration routine.
@@ -141,11 +144,11 @@ class ColorTracker:
         y_center = int(round(img_hsv.shape[0] / 2))
 
         if team_number == 1:
-            x_player = x_center + 85
+            x_player = x_center + int(85*self.SCALE_FACTOR/100)
             y_player = y_center
 
         if team_number == 2:
-            x_player = x_center - 85
+            x_player = x_center - int(85*self.SCALE_FACTOR/100)
             y_player = y_center
 
         # Get the color of the pixel in the image center

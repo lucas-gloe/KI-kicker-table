@@ -3,6 +3,8 @@ from video_get import VideoGet
 from video_show import VideoShow
 from video_get_from_file import VideoGetFromFile
 from gui import GUI
+from detect_color import ColorTracker
+from detect_field import DetectField
 
 import detect_field
 import detect_color
@@ -28,6 +30,14 @@ def main():
 
     detected_field = detect_field.DetectField()
     detected_color = detect_color.ColorTracker()
+
+    SCALE_PERCENT = 60  # percent of original size
+
+    video_getter.SCALE_FACTOR = SCALE_PERCENT
+    game.SCALE_FACTOR = SCALE_PERCENT
+    ColorTracker.SCALE_FACTOR = SCALE_PERCENT
+    DetectField.SCALE_FACTOR = SCALE_PERCENT
+
 
     def calibrate_color(frame, ball_position):
         """
@@ -88,9 +98,9 @@ def main():
                 first_frame = False
             if first_frame:
                 video_shower.frame = frame
-                cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
-                cv2.circle(frame, (int(frame.shape[1] / 2 - 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
-                cv2.circle(frame, (int(frame.shape[1] / 2 + 85), int(frame.shape[0] / 2)), 20, (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2 - int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2 + int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
                 if keyboard.is_pressed("s"):
                     cv2.imwrite("calibration_image.JPG", frame)
 

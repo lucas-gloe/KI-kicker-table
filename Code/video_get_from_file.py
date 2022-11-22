@@ -8,18 +8,23 @@ class VideoGetFromFile:
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
-
-    # VIDEO_FILE = "../Video/1080p/120fps/lang.MP4"
-    # VIDEO_FILE = "../Video/720p/60fps/60fps.MOV"
-    VIDEO_FILE = "../Video/1080p/240fps/240 länger.MP4"
     PICTURE = "../Code/calibration_image.JPG"
+
     def __init__(self, src=PICTURE):
 
+        self.SCALE_FACTOR = 60  # percent of original size
+
         self.stream = cv2.imread("../Code/calibration_image.JPG")
-        #self.stream = cv2.imread("../Video/1080p/240fps/240 länger.MP4")
 
         self.frame = self.stream
-        # if self.frame == self.stream:
+
+        width = int(self.frame.shape[1] * self.SCALE_FACTOR / 100)
+        height = int(self.frame.shape[0] * self.SCALE_FACTOR / 100)
+        dim = (width, height)
+
+        # resize image
+        self.frame = cv2.resize(self.frame, dim, interpolation = cv2.INTER_AREA)
+
         self.grabbed = True
 
         self.stopped = False

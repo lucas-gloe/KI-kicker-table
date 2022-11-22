@@ -14,7 +14,6 @@ class DetectField:
     ratio_pxcm = 0
     angle = 0
 
-
     def get_angle(self, calibration_image):
         """
         :param calibration_image: The HSV-image to use for calculation
@@ -102,8 +101,8 @@ class DetectField:
         :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
         """
 
-        half_field_width = 68  # 60 + 8 for the goalkeepers feed and goal room
-        half_field_height = 38  # 34 +4 for tollerance
+        half_field_width = 60 + 8  # 60 + 8 for the goalkeepers feed and goal room
+        half_field_height = 34 + 4 # 34 +4 for tollerance
 
         # x1 = int(self.center[0])
         # y1 = int(self.center[1])

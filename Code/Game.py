@@ -14,11 +14,9 @@ class Game:
     Class that tracks the game and his properties
     """
 
-    # constances
 
-    global RODWIDTH, HALF_PLAYERS_WIDTH
-    RODWIDTH = 70
-    HALF_PLAYERS_WIDTH = 20
+
+
 
     ################################# INITIALIZE GAME CLASS ####################################
 
@@ -26,12 +24,16 @@ class Game:
         """
         Initialize game variables and properties
         """
+
+        # constances
+        self.SCALE_FACTOR = 60
+        self.RODWIDTH = 70 * self.SCALE_FACTOR / 100
+        self.HALF_PLAYERS_WIDTH = 20 * self.SCALE_FACTOR / 100
+
         self._start_time = None
         self._num_occurrences = 0
         self.results_from_calibration = True
         self._first_frame = True
-        self._values = [[], []]
-        self._pixel = (0, 0, 0)
         self._current_ball_position = None
         self._ball_positions = []
         self.predicted_value_added = False
@@ -44,7 +46,7 @@ class Game:
         self.tracked_ball_color_for_GUI = "orange"
         self.tracked_team1_color_for_GUI = "orange"
         self.tracked_team2_color_for_GUI = "orange"
-        self.__recalibrated_ball_color = []
+        self.__recalibrated_ball_color = None
         self.ball_was_found = False
         self._kf = KalmanFilter()
         self._df = DetectField()
@@ -55,7 +57,7 @@ class Game:
         self.goal1 = None
         self.goal2 = None
         self.throw_in_zone = None
-        self.players_rods = np.array([])
+        self.players_rods = None
         self._granted_players_areas_around_rods = []
         self._ranked = [[], []]
         self._team1_figures = None
@@ -308,12 +310,12 @@ class Game:
 
     def _load_players_area(self):
         for rod in self.players_rods:
-            granted_players_area = [[rod[0][0] - RODWIDTH, rod[0][1]], [rod[1][0] + RODWIDTH, rod[1][1]]]
+            granted_players_area = [[rod[0][0] - self.RODWIDTH, rod[0][1]], [rod[1][0] + self.RODWIDTH, rod[1][1]]]
             self._granted_players_areas_around_rods.append(granted_players_area)
 
     def __get_rod(self, x):
         for i, rod in enumerate(self.players_rods):
-            if rod[0][0] - RODWIDTH <= x <= rod[1][0] + RODWIDTH:
+            if rod[0][0] - self.RODWIDTH <= x <= rod[1][0] + self.RODWIDTH:
                 return i
         return -1
 
@@ -327,9 +329,9 @@ class Game:
             y_mid = contour[1] + contour[3] / 2
 
             left_corner_x = contour[0]
-            left_corner_y = y_mid - HALF_PLAYERS_WIDTH
+            left_corner_y = y_mid - self.HALF_PLAYERS_WIDTH
             right_corner_x = (contour[0] + contour[2])
-            right_corner_y = y_mid + HALF_PLAYERS_WIDTH
+            right_corner_y = y_mid + self.HALF_PLAYERS_WIDTH
             max_box = [[left_corner_x, left_corner_y], [right_corner_x, right_corner_y]]
             _max_bounding_boxes.append(max_box)
 
@@ -406,6 +408,11 @@ class Game:
             self._new_game = True
             self._ball_positions = []
             self.last_speed = [0.0]
+        if keyboard.is_pressed("p"):  # manual goal team1
+            self.counter_team1 += 1
+        if keyboard.is_pressed("l"):  # manual goal team2
+            self.counter_team2 += 1
+
 
     def _check_variables(self):
         if len(self.last_speed) >= 200:
@@ -531,7 +538,7 @@ class Game:
         """
         # draw a circle for the ball
         if self._current_ball_position != [-1, -1]:
-            cv2.circle(frame, (self._current_ball_position[0], self._current_ball_position[1]), 16, (0, 255, 0), 2)
+            cv2.circle(frame, (self._current_ball_position[0], self._current_ball_position[1]), int(16*self.SCALE_FACTOR/100), (0, 255, 0), 2)
             cv2.putText(frame, "Ball", (self._current_ball_position[0], self._current_ball_position[1]),
                         cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
 

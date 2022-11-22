@@ -54,7 +54,7 @@ class GUI:
 
         game_score_and_speed = [
             [sg.Text('SIT Smart Kicker', text_color='orange', font=(self._FONT, 30))],
-            [sg.Text("")],
+            [sg.Text("manual goal: P", text_color='grey', font=(self._FONT, 10)),sg.Text("manual goal: L", text_color='grey', font=(self._FONT, 10))],
             [sg.Text("", key='-score_team_1-',font=(self._FONT, 45)), sg.Text(" : ", font=(self._FONT, 20)), sg.Text("", key='-score_team_2-', font=(self._FONT, 45))],
             [sg.Text("Team 1", font=(self._FONT, 20)), sg.Text("Team 2", font=(self._FONT, 20))],
             [sg.Text("")],
@@ -113,7 +113,7 @@ class GUI:
 
         self._layout = [
             [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 600)),
-            sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 600))]
+             sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 600))]
         ]
 
     def start(self):

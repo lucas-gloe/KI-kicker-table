@@ -12,6 +12,7 @@ class VideoShow:
 
         """
         self.frame = frame
+
         self.stopped = False
 
     def start(self):
