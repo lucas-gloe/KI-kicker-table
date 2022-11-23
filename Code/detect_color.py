@@ -5,16 +5,11 @@ import numpy as np
 class ColorTracker:
     # --- color detection in a single frame --- #
 
-    ball_detection_threshold = 0.2
-    interface = 0
-
-    ball_color = (-1, -1, -1)
-    team1_color = (-1, -1, -1)
-    team2_color = (-1, -1, -1)
-    curr_ball_position = (-1, -1)
-
-    def __init__(self):
-        self.SCALE_FACTOR = 60
+    def __init__(self, scale_factor):
+        self.ball_color = (-1, -1, -1)
+        self.team1_color = (-1, -1, -1)
+        self.team2_color = (-1, -1, -1)
+        self._SCALE_FACTOR = scale_factor
 
     def calibrate_ball_color(self, img_hsv):
         """
@@ -28,7 +23,7 @@ class ColorTracker:
         y_center = int(round(img_hsv.shape[0] / 2))
 
         # Get the color of the pixel around the image center
-        colors = img_hsv[y_center - 5:y_center + 6, x_center - 5:x_center + 6]
+        colors = img_hsv[y_center - int(5 * self._SCALE_FACTOR/100):y_center + int(6 * self._SCALE_FACTOR/100), x_center - int(5 * self._SCALE_FACTOR/100):x_center + int(6 * self._SCALE_FACTOR/100)]
         lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
         upper_border_arr = [np.max(colors[:, :, 0]), np.max(colors[:, :, 1]), np.max(colors[:, :, 2])]
 
@@ -144,16 +139,16 @@ class ColorTracker:
         y_center = int(round(img_hsv.shape[0] / 2))
 
         if team_number == 1:
-            x_player = x_center + int(85*self.SCALE_FACTOR/100)
+            x_player = x_center + int(85 * self._SCALE_FACTOR / 100)
             y_player = y_center
 
         if team_number == 2:
-            x_player = x_center - int(85*self.SCALE_FACTOR/100)
+            x_player = x_center - int(85 * self._SCALE_FACTOR / 100)
             y_player = y_center
 
         # Get the color of the pixel in the image center
         color = img_hsv[y_player, x_player]
-        colors = img_hsv[y_player - 5:y_player + 6, x_player - 5:x_player + 6]
+        colors = img_hsv[y_player - int(6 * self._SCALE_FACTOR/100):y_player + int(5* self._SCALE_FACTOR/100), x_player - int(6* self._SCALE_FACTOR/100):x_player + int(5* self._SCALE_FACTOR/100)]
         lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
         upper_border_arr = [np.max(colors[:, :, 0]), np.max(colors[:, :, 1]), np.max(colors[:, :, 2])]
 
@@ -180,15 +175,3 @@ class ColorTracker:
         if team_number == 2:
             self.team2_color = tuple(av)
             return self.team2_color
-
-    def get_var(self, _type):
-        """
-        Get the class variables
-        :param _type: String to choose the variabe
-        :return: The requested variable, empty string if requested name is
-        unavailable
-        """
-        if 'ball_position' == _type:
-            return self.curr_ball_position
-        else:
-            return ""  # False

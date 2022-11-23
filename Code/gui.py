@@ -12,8 +12,9 @@ class GUI:
 
     def __init__(self, game, frame=None):
         """creating variables and constants"""
-        self.window = None
         self._FONT = "Helvetica"
+
+        self.window = None
         self.stopped = False
         self.game = game
         self.frame = frame

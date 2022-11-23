@@ -3,16 +3,16 @@ from threading import Thread
 import cv2
 
 
-class VideoGetFromFile:
+class VideoGetterFromFile:
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
     PICTURE = "../Code/calibration_image.JPG"
 
-    def __init__(self, src=PICTURE):
+    def __init__(self, scale_factor, src=PICTURE):
 
-        self.SCALE_FACTOR = 60  # percent of original size
+        self.SCALE_FACTOR = scale_factor  # percent of original size
 
         self.stream = cv2.imread("../Code/calibration_image.JPG")
 

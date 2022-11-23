@@ -2,7 +2,7 @@ import cv2
 from threading import Thread
 
 
-class VideoGet:
+class VideoGetter:
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
@@ -11,12 +11,12 @@ class VideoGet:
     DEFAULT_CAM = 0
     CAMERA_1 = 1
 
-    def __init__(self, src=CAMERA_1):
+    def __init__(self, scale_percent, src=CAMERA_1):
+        """
+        initialize camera stream and resize the full hd resolution with a certain scale
         """
 
-        """
-
-        self.SCALE_PERCENT = 60  # percent of original size
+        self.SCALE_PERCENT = scale_percent  # percent of original size
 
         # for camera uses
 
@@ -37,14 +37,14 @@ class VideoGet:
 
     def start(self):
         """
-
+        start the camerathread for grabbing the frame
         """
         Thread(target=self.get, args=()).start()
         return self
 
     def get(self):
         """
-
+        get new frame from camerastream
         """
         while not self.stopped:
             if not self.grabbed:
@@ -56,6 +56,6 @@ class VideoGet:
 
     def stop(self):
         """
-
+        stop gabbing frames from camera
         """
         self.stopped = True

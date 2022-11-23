@@ -5,7 +5,7 @@ import keyboard
 import numpy as np
 
 from kalman_filter import KalmanFilter
-from detect_field import DetectField
+from detect_field import FieldDetector
 from detect_color import ColorTracker
 
 
@@ -13,23 +13,19 @@ class Game:
     """
     Class that tracks the game and his properties
     """
-
-
-
-
-
     ################################# INITIALIZE GAME CLASS ####################################
 
-    def __init__(self):
+    def __init__(self, scale_percent):
         """
         Initialize game variables and properties
         """
 
         # constances
-        self.SCALE_FACTOR = 60
+        self.SCALE_FACTOR = scale_percent
         self.RODWIDTH = 70 * self.SCALE_FACTOR / 100
         self.HALF_PLAYERS_WIDTH = 20 * self.SCALE_FACTOR / 100
 
+        # variables
         self._start_time = None
         self._num_occurrences = 0
         self.results_from_calibration = True
@@ -49,8 +45,8 @@ class Game:
         self.__recalibrated_ball_color = None
         self.ball_was_found = False
         self._kf = KalmanFilter()
-        self._df = DetectField()
-        self._dc = ColorTracker()
+        self._df = FieldDetector(self.SCALE_FACTOR)
+        self._dc = ColorTracker(self.SCALE_FACTOR)
         self._players_on_field = [False, False]
         self.field = None
         self.match_field = None
@@ -58,7 +54,6 @@ class Game:
         self.goal2 = None
         self.throw_in_zone = None
         self.players_rods = None
-        self._granted_players_areas_around_rods = []
         self._ranked = [[], []]
         self._team1_figures = None
         self._team2_figures = None
@@ -111,7 +106,6 @@ class Game:
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(
             field)
-        self._load_players_area()
         self._team1_figures = self._track_players(1, hsv_img)
         self._team2_figures = self._track_players(2, hsv_img)
         self._track_ball(hsv_img)
@@ -130,7 +124,7 @@ class Game:
 
         # Draw results in frame
         #self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
-        self._draw_contour_on_kicker(out_frame)
+        self._draw_field_calibrations(out_frame)
         self._draw_ball(out_frame)
         self._draw_predicted_ball(out_frame)
         self._draw_figures(out_frame, self._team1_figures, 1)
@@ -308,12 +302,10 @@ class Game:
                 ranks = self.__reverse_ranks(ranks)
             return ranks
 
-    def _load_players_area(self):
-        for rod in self.players_rods:
-            granted_players_area = [[rod[0][0] - self.RODWIDTH, rod[0][1]], [rod[1][0] + self.RODWIDTH, rod[1][1]]]
-            self._granted_players_areas_around_rods.append(granted_players_area)
-
     def __get_rod(self, x):
+        """
+        check at which rod the detected shape is positioned
+        """
         for i, rod in enumerate(self.players_rods):
             if rod[0][0] - self.RODWIDTH <= x <= rod[1][0] + self.RODWIDTH:
                 return i
@@ -499,7 +491,7 @@ class Game:
     #     cv2.putText(tracked_frame, "{:.0f} iterations/sec".format(iterations_per_sec), (50, 900),
     #                 cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
 
-    def _draw_contour_on_kicker(self, frame):
+    def _draw_field_calibrations(self, frame):
         """
         show football field contour for calibration on frame if a certain button was pressed
         """
@@ -548,7 +540,7 @@ class Game:
         detected in the frame and name the Object "ball"
         """
         if self._current_ball_position == [-1, -1]:
-            cv2.circle(frame, (self._predicted[0], self._predicted[1]), 16, (0, 255, 255), 2)
+            cv2.circle(frame, (self._predicted[0], self._predicted[1]), int(16*self.SCALE_FACTOR/100), (0, 255, 255), 2)
 
     def _draw_figures(self, frame, player_positions, team_number):
         """

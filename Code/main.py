@@ -1,10 +1,10 @@
 from game import Game
-from video_get import VideoGet
-from video_show import VideoShow
-from video_get_from_file import VideoGetFromFile
+from video_get import VideoGetter
+from video_show import VideoShower
+from video_get_from_file import VideoGetterFromFile
 from gui import GUI
 from detect_color import ColorTracker
-from detect_field import DetectField
+from detect_field import FieldDetector
 
 import detect_field
 import detect_color
@@ -23,27 +23,23 @@ def main():
     """
     first_frame = True
     start_gui = True
-    #video_getter = VideoGet(VideoGet.CAMERA_1).start()
-    video_getter = VideoGetFromFile(VideoGetFromFile.PICTURE).start()
-    video_shower = VideoShow(video_getter.frame).start()
-    game = Game().start()
 
-    detected_field = detect_field.DetectField()
-    detected_color = detect_color.ColorTracker()
+    SCALE_PERCENT = 40  # percent of original size
 
-    SCALE_PERCENT = 60  # percent of original size
+    video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
+    #video_getter = VideoGetterFromFile(SCALE_PERCENT, VideoGetterFromFile.PICTURE).start()
+    video_shower = VideoShower(video_getter.frame).start()
+    game = Game(SCALE_PERCENT).start()
 
-    video_getter.SCALE_FACTOR = SCALE_PERCENT
-    game.SCALE_FACTOR = SCALE_PERCENT
-    ColorTracker.SCALE_FACTOR = SCALE_PERCENT
-    DetectField.SCALE_FACTOR = SCALE_PERCENT
+    detected_field = detect_field.FieldDetector(SCALE_PERCENT)
+    detected_color = detect_color.ColorTracker(SCALE_PERCENT)
 
-
-    def calibrate_color(frame, ball_position):
+    def _calibrate_color(frame, ball_position):
         """
-
+        The user has to put the ball onto the center spot for calibration. the taken image will be used to read the colors from the marked positions.
+        :param_type: calibration img, array
+        :return: ball color, team colors
         """
-        # The user has to put the ball onto the center spot for calibration.
         t_end = time.time()  # + 1
         _done = 0
         # When the fixed image is used for calibration, at least one execution is
@@ -71,6 +67,8 @@ def main():
 
         image_crop = calibration_image[y1:y2, x1:x2]
 
+        #cv2.imwrite("cropped_calibration_img.JPG", image_crop)
+
         ball_color = detected_color.calibrate_ball_color(image_crop)
         team1_color = detected_color.calibrate_team_color(image_crop, 1)
         team2_color = detected_color.calibrate_team_color(image_crop, 2)
@@ -94,13 +92,13 @@ def main():
                 detected_field.get_center_scale(calibration_image)
                 field = detected_field.calc_field()
                 ratio_pxcm = detected_field.get_var("ratio_pxcm")
-                ball_color, team1_color, team2_color = calibrate_color(calibration_image, detected_field.get_var("center"))
+                ball_color, team1_color, team2_color = _calibrate_color(calibration_image, detected_field.get_var("center"))
                 first_frame = False
             if first_frame:
                 video_shower.frame = frame
-                cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
-                cv2.circle(frame, (int(frame.shape[1] / 2 - int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
-                cv2.circle(frame, (int(frame.shape[1] / 2 + int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(20*SCALE_PERCENT/100), (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), int(18*SCALE_PERCENT/100), (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2 - int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(18*SCALE_PERCENT/100), (30, 144, 255), 1)
+                cv2.circle(frame, (int(frame.shape[1] / 2 + int(85*SCALE_PERCENT/100)), int(frame.shape[0] / 2)), int(18*SCALE_PERCENT/100), (30, 144, 255), 1)
                 if keyboard.is_pressed("s"):
                     cv2.imwrite("calibration_image.JPG", frame)
 
