@@ -11,7 +11,11 @@ class GUI:
     """
 
     def __init__(self, game, frame=None):
-        """creating variables and constants"""
+        """
+        Define the gui and its dependings
+        """
+
+        # creating variables and constants
         self._FONT = "Helvetica"
 
         self.window = None
@@ -22,7 +26,8 @@ class GUI:
         # layout of the GUI
 
         sg.theme('Reddit')
-        ################# Game Frame #######################################
+
+        ################# Game frame #######################################
 
         game_frame = [
             [sg.Image(filename="", key="-frame-")]
@@ -55,7 +60,7 @@ class GUI:
 
         game_score_and_speed = [
             [sg.Text('SIT Smart Kicker', text_color='orange', font=(self._FONT, 30))],
-            [sg.Text("manual goal: P", text_color='grey', font=(self._FONT, 10)),sg.Text("manual goal: L", text_color='grey', font=(self._FONT, 10))],
+            [sg.Button('goal+1', key="-manual_game_counter_team_1_up-", button_color='grey', font=(self._FONT, 8)),sg.Button('goal-1', key="-manual_game_counter_team_1_down-", button_color='grey', font=(self._FONT, 8)), sg.Button('goal+1', key="-manual_game_counter_team_2_up-", button_color='grey', font=(self._FONT, 8)), sg.Button('goal-1', key="-manual_game_counter_team_2_down-", button_color='grey', font=(self._FONT, 8))],
             [sg.Text("", key='-score_team_1-',font=(self._FONT, 45)), sg.Text(" : ", font=(self._FONT, 20)), sg.Text("", key='-score_team_2-', font=(self._FONT, 45))],
             [sg.Text("Team 1", font=(self._FONT, 20)), sg.Text("Team 2", font=(self._FONT, 20))],
             [sg.Text("")],
@@ -78,7 +83,7 @@ class GUI:
 
         ################# right frame with advanced infos #################
 
-        # right frame
+        # frame pattern
 
         heat_map = [
             [sg.Text("Heat Map", text_color='orange', font=(self._FONT, 15))]
@@ -96,6 +101,8 @@ class GUI:
             [sg.Frame("", heat_map, expand_x=True, expand_y=True, element_justification='c'), sg.Frame("", blank_frame, expand_x=True, expand_y=True, element_justification='c')],
             [sg.Frame("", blank_frame2, expand_x=True, expand_y=True, element_justification='c')]
         ]
+
+        # right frame
 
         game_analysis = [
             [sg.Frame("", layout=deep_information, border_width=0, expand_x=True, expand_y=True)]
@@ -118,25 +125,34 @@ class GUI:
         ]
 
     def start(self):
-        """define the gui window"""
+        """
+        start the gui window thread
+        :return: thread properties
+        """
         Thread(target=self.show_gui, args=()).start()
         return self
 
     def stop(self):
-        """stop and close the gui window"""
+        """
+        stop and close the gui window and thread
+        """
         self.stopped = True
         self.window.close()
 
     def show_gui(self):
-        """interpret gui window and show the result"""
+        """
+        interpret gui window and show the result
+        """
         self.window = sg.Window('Kicker Game', self._layout)
         while not self.stopped:
-            self.window.read(timeout=1)
-            self.update_gui()
+            event, values = self.window.read(timeout=1)
+            self.update_gui(event)
             self.window.Refresh()
 
-    def update_gui(self):
-        """update values on gui window"""
+    def update_gui(self, event):
+        """
+        update values on gui window
+        """
         #self.window["-frame-"].update(data=cv2.imencode('.ppm', self.frame)[1].tobytes())
         self.window["-team_1-"].update(background_color=self.game.check_game_var("-team_1-"))
         self.window["-team_2-"].update(background_color=self.game.check_game_var("-team_2-"))
@@ -152,5 +168,16 @@ class GUI:
         self.window["-third_last_game_team2-"].update(self.game.check_game_var("-third_last_game_team2-"))
         if os.path.exists("./calibration_image.JPG"):
             self.window["-config_img-"].update("configuration image saved!")
-        self.window["-counts_per_second-"].update(round(self.game.check_game_var("-counts_per_second-"), 0))
-
+            self.window["-counts_per_second-"].update(round(self.game.check_game_var("-counts_per_second-"), 0))
+        if event == "-manual_game_counter_team_1_up-":
+            self.game.check_game_var("-manual_game_counter_team_1_up-")
+            self.window["-score_team_1-"].update(self.game.check_game_var("-score_team_1-"))
+        if event == "-manual_game_counter_team_1_down-":
+            self.game.check_game_var("-manual_game_counter_team_1_down-")
+            self.window["-score_team_1-"].update(self.game.check_game_var("-score_team_1-"))
+        if event == "-manual_game_counter_team_2_up-":
+            self.game.check_game_var("-manual_game_counter_team_2_up-")
+            self.window["-score_team_2-"].update(self.game.check_game_var("-score_team_2-"))
+        if event == "-manual_game_counter_team_2_down-":
+            self.game.check_game_var("-manual_game_counter_team_2_down-")
+            self.window["-score_team_2-"].update(self.game.check_game_var("-score_team_2-"))
