@@ -24,7 +24,7 @@ def main():
     first_frame = True
     start_gui = True
 
-    SCALE_PERCENT = 40  # percent of original size
+    SCALE_PERCENT = 50  # percent of original size
 
     video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
     #video_getter = VideoGetterFromFile(SCALE_PERCENT, VideoGetterFromFile.PICTURE).start()
@@ -67,7 +67,7 @@ def main():
 
         image_crop = calibration_image[y1:y2, x1:x2]
 
-        #cv2.imwrite("cropped_calibration_img.JPG", image_crop)
+        cv2.imwrite("cropped_calibration_img.JPG", image_crop)
 
         ball_color = detected_color.calibrate_ball_color(image_crop)
         team1_color = detected_color.calibrate_team_color(image_crop, 1)

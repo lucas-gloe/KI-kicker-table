@@ -88,7 +88,7 @@ class Game:
 
     def interpret_frame(self, frame, ball_color, field, team1_color, team2_color, ratio_pxcm):
         """
-        interpret, track and draw game properties on the frame
+        interpret, track and draw objects on the frame
         """
         # define colors from calibration
         self._num_occurrences += 1
@@ -603,6 +603,16 @@ class Game:
                 return self.game_results[-3][1]
             else:
                 ""
+        elif "-manual_game_counter_team_1_up-" == _type:
+            self.counter_team1 += 1
+        elif "-manual_game_counter_team_1_down-" == _type:
+            if self.counter_team1 > 0:
+                self.counter_team1 -= 1
+        elif "-manual_game_counter_team_2_up-" == _type:
+            self.counter_team2 += 1
+        elif "-manual_game_counter_team_2_down-" == _type:
+            if self.counter_team2 > 0:
+                self.counter_team2 -= 1
         else:
             return ""  # False
 

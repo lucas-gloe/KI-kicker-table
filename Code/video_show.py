@@ -18,6 +18,7 @@ class VideoShower:
     def start(self):
         """
         start the camera thread for showing the frame
+        :return: thread properties
         """
         Thread(target=self.show, args=()).start()
         return self

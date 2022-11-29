@@ -102,8 +102,8 @@ class FieldDetector:
         :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
         """
 
-        half_field_width = 60 + int(8*self.SCALE_FACTOR/100)  # 60 + 8 for the goalkeepers feed and goal room
-        half_field_height = 34 + int(4*self.SCALE_FACTOR/100) # 34 +4 for tollerance
+        half_field_width = 60 + int(13*self.SCALE_FACTOR/100)  # 60 + 8 for the goalkeepers feed and goal room
+        half_field_height = 34 + int(10*self.SCALE_FACTOR/100) # 34 +4 for tollerance
 
         angle_radial_scale = np.radians(self.angle)
 
@@ -136,41 +136,42 @@ class FieldDetector:
 
     def load_game_field_properties(self, field):
         """
-
+        calculate the position of the field, the goals, the throw-in-zone and the rods.
+        :return: position parameters
         """
         match_field = np.array([[int(field[0][0]), int(field[0][1])],
                                 [int(field[2][0]), int(field[2][1])]])
         goal1 = np.array([[int(match_field[0][0]), int((np.linalg.norm(
-            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
-                          [int(match_field[0][0] + 50), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(120*self.SCALE_FACTOR/100))],
+                          [int(match_field[0][0] + int(80*self.SCALE_FACTOR/100)), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                                 1]) + 120)]])
-        goal2 = np.array([[int(match_field[1][0] - 50), int((np.linalg.norm(
-            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - 120)],
+                                                                 1]) + int(120*self.SCALE_FACTOR/100))]])
+        goal2 = np.array([[int(match_field[1][0] - int(80*self.SCALE_FACTOR/100)), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(120*self.SCALE_FACTOR/100))],
                           [int(match_field[1][0]), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                            1]) + 120)]])
-        throw_in_zone = np.array([[int(match_field[0][0] + 400), int(match_field[0][1])],
-                                  [int(match_field[1][0] - 400), int(match_field[1][1])]])
+                                                            1]) + int(120*self.SCALE_FACTOR/100))]])
+        throw_in_zone = np.array([[int(match_field[0][0] + int(400*self.SCALE_FACTOR/100)), int(match_field[0][1])],
+                                  [int(match_field[1][0] - int(400*self.SCALE_FACTOR/100)), int(match_field[1][1])]])
 
         distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / 8
 
-        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-11)+20), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (0.5*distance_between_rods+11)+20), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (1.5*distance_between_rods-11)+13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (1.5*distance_between_rods+11)+13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (2.5*distance_between_rods-11)+12), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (2.5*distance_between_rods+11)+12), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (3.5*distance_between_rods-11)+3), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (3.5*distance_between_rods+11)+3), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (4.5*distance_between_rods-11)-3), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (4.5*distance_between_rods+11)-3), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (5.5*distance_between_rods-11)-12), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (5.5*distance_between_rods+11)-12), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (6.5*distance_between_rods-11)-13), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (6.5*distance_between_rods+11)-13), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (7.5*distance_between_rods-11)-20), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (7.5*distance_between_rods+11)-20), int(match_field[1][1])]]])
+        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+15), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (0.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+15), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (1.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+9), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (1.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+9), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (2.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+9), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (2.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+9), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (3.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+3), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (3.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+3), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (4.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-3), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (4.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-3), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (5.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-9), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (5.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-9), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (6.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-9), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (6.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-9), int(match_field[1][1])]],
+                                 [[int(match_field[0][0] + (7.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-15), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (7.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-15), int(match_field[1][1])]]])
 
         return [match_field, goal1, goal2, throw_in_zone, players_rods]
 

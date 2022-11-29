@@ -49,6 +49,9 @@ class ColorTracker:
 
     def recalibrate_ball_color(self, img_hsv, x_center, y_center, team1_figures, team2_figures, players_rods):
         """
+        compares ball position with players and rods, no overlapping should happen
+        Measures the color of the ball and stores it in the class.
+        :param img_hsv: HSV-image to use for calculation, ball position, players and rod position.
         """
         team1_figures = np.array(team1_figures)
         team2_figures = np.array(team2_figures)

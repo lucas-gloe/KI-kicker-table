@@ -38,6 +38,7 @@ class VideoGetter:
     def start(self):
         """
         start the camerathread for grabbing the frame
+        :return: thread properties
         """
         Thread(target=self.get, args=()).start()
         return self
