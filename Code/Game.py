@@ -30,13 +30,16 @@ class Game:
         self._num_occurrences = 0
         self.results_from_calibration = True
         self._first_frame = True
-        self._current_ball_position = None
-        self._ball_positions = []
+        self._current_ball_position = [-1,-1]
+        self._ball_positions = [[-1,-1]]
         self.predicted_value_added = False
+        self.center_x = 0
+        self.center_y = 0
         self._colors = None
         # self._colors = [[0, 116, 182, 7, 175, 255], [0, 167, 165, 23, 255, 255], [102, 66, 111, 120, 255, 255]]  # HSV
         self.__ball_color_from_calibration = None
         self._ball_color = None
+        self.ball_mask = None
         self.__team1_color_from_calibration = None
         self.__team2_color_from_calibration = None
         self.tracked_ball_color_for_GUI = "orange"
@@ -159,10 +162,13 @@ class Game:
         lower_color = np.array(lower_color)
         upper_color = np.array(upper_color)
 
-        mask = cv2.inRange(hsv_img, lower_color, upper_color)
-        mask = self.__smooth_ball_mask(mask)
+        # blurring image to prevent false object detection
+        hsv_img = cv2.blur(hsv_img, (3, 3))
 
-        objects = self.__find_objects(mask, -1)
+        mask = cv2.inRange(hsv_img, lower_color, upper_color)
+        self.ball_mask = self.__smooth_ball_mask(mask)
+
+        objects = self.__find_objects(self.ball_mask, -1)
         objects.flatten()
 
         if len(objects) == 1:
@@ -175,19 +181,19 @@ class Game:
             h = objects[0][3]
 
             # defining the center points for the case the detected contour is the ball
-            center_x = int((x + (w / 2)))
-            center_y = int((y + (h / 2)))
+            self.center_x = int((x + (w / 2)))
+            self.center_y = int((y + (h / 2)))
 
             # save the current position of the ball into an array
-            self._current_ball_position = [center_x, center_y]
+            self._current_ball_position = [self.center_x, self.center_y]
 
             # recalibrate ball color in current frame
-            self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y,
-                                                                             self._team1_figures, self._team2_figures,
-                                                                             self.players_rods)
+            # self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y,
+            #                                                                  self._team1_figures, self._team2_figures,
+            #                                                                  self.players_rods)
             self.ball_was_found = True
 
-            self._predicted = self._kf.predict(center_x, center_y)
+            self._predicted = self._kf.predict(self.center_x, self.center_y)
 
         elif len(objects) == 0:
             if not self.predicted_value_added:
@@ -195,12 +201,15 @@ class Game:
                 self.predicted_value_added = True
                 self.ball_was_found = False
             else:
-                print("Ball nicht erkannt")
+                # print("Ball nicht erkannt")
                 self._current_ball_position = [-1, -1]
                 self.ball_was_found = False
         else:
-            # self.__calculate_balls_position(objects)
-            self._current_ball_position = [-1, -1]
+        #     #self.__calculate_balls_position(objects)
+            if self.center_x != 0 & self.center_y != 0:
+                self._current_ball_position = [self.center_x, self.center_y]
+            else:
+                self._current_ball_position = [-1, -1]
 
         self._ball_positions.append(self._current_ball_position)
 
@@ -231,7 +240,7 @@ class Game:
 
         elif len(objects) == 0:
             self._players_on_field[team_number - 1] = False
-            print("Team " + str(team_number) + " nicht erkannt")
+            # print("Team " + str(team_number) + " nicht erkannt")
             return []
 
     def __find_objects(self, mask, team_number):
@@ -247,7 +256,7 @@ class Game:
         for cnt in contours:
             area = cv2.contourArea(cnt)
             # saving contours properties in variables if a certain area is detected on the mask (to prevent blurring)
-            if area > 100:
+            if area > 20:
                 peri = cv2.arcLength(cnt, True)
                 approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
                 x, y, w, h = cv2.boundingRect(approx)
@@ -255,7 +264,8 @@ class Game:
                 objects.append(white_contour)
 
         objects = np.array(objects)
-        if len(objects) > 1:
+
+        if len(objects) >= 1:
             objects = np.delete(objects, np.where(
                 ((self.match_field[0][0] > objects[:, 0]) | (objects[:, 0] > self.match_field[1][0])) | (
                         (self.match_field[0][1] > objects[:, 1]) | (
@@ -400,13 +410,12 @@ class Game:
             self._new_game = True
             self._ball_positions = []
             self.last_speed = [0.0]
-        if keyboard.is_pressed("p"):  # manual goal team1
-            self.counter_team1 += 1
-        if keyboard.is_pressed("l"):  # manual goal team2
-            self.counter_team2 += 1
 
 
     def _check_variables(self):
+        """
+        Check size of lists, pop items if to many items are in the lists
+        """
         if len(self.last_speed) >= 200:
             self.last_speed.pop(0)
         if len(self._ball_positions) >= 1000:
@@ -460,7 +469,7 @@ class Game:
 
     def _ball_speed_tracking(self):
         """
-        Measure the current speed of the ball
+        measure the current speed of the ball
         """
         if len(self._ball_positions) >= 3 and self._ball_positions[-1] != [-1, -1]:
             # safe ball positions into an numpyArray

@@ -11,12 +11,14 @@ class FieldDetector:
     """
     angle = 0
 
+
     def __init__(self, scale_factor):
         self.ratio_pxcm = None
         self.center = None
         self.field = None
         self.angle = None
         self.SCALE_FACTOR = scale_factor
+        self.HALF_WIDTH_GOAL = 110
 
     def get_angle(self, calibration_image):
         """
@@ -142,15 +144,15 @@ class FieldDetector:
         match_field = np.array([[int(field[0][0]), int(field[0][1])],
                                 [int(field[2][0]), int(field[2][1])]])
         goal1 = np.array([[int(match_field[0][0]), int((np.linalg.norm(
-            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(120*self.SCALE_FACTOR/100))],
-                          [int(match_field[0][0] + int(80*self.SCALE_FACTOR/100)), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(self.HALF_WIDTH_GOAL*self.SCALE_FACTOR/100))],
+                          [int(match_field[0][0] + int(100*self.SCALE_FACTOR/100)), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                                 1]) + int(120*self.SCALE_FACTOR/100))]])
-        goal2 = np.array([[int(match_field[1][0] - int(80*self.SCALE_FACTOR/100)), int((np.linalg.norm(
-            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(120*self.SCALE_FACTOR/100))],
+                                                                 1]) + int(self.HALF_WIDTH_GOAL*self.SCALE_FACTOR/100))]])
+        goal2 = np.array([[int(match_field[1][0] - int(100*self.SCALE_FACTOR/100)), int((np.linalg.norm(
+            (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(self.HALF_WIDTH_GOAL*self.SCALE_FACTOR/100))],
                           [int(match_field[1][0]), int((np.linalg.norm(
                               (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                            1]) + int(120*self.SCALE_FACTOR/100))]])
+                                                            1]) + int(self.HALF_WIDTH_GOAL*self.SCALE_FACTOR/100))]])
         throw_in_zone = np.array([[int(match_field[0][0] + int(400*self.SCALE_FACTOR/100)), int(match_field[0][1])],
                                   [int(match_field[1][0] - int(400*self.SCALE_FACTOR/100)), int(match_field[1][1])]])
 

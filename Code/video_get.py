@@ -27,6 +27,7 @@ class VideoGetter:
 
         (self.grabbed, frame) = self.stream.read()
 
+        # rezising frame for speed optimisation
         width = int(frame.shape[1] * self.SCALE_PERCENT / 100)
         height = int(frame.shape[0] * self.SCALE_PERCENT / 100)
         self.dim = (width, height)

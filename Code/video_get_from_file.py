@@ -8,14 +8,15 @@ class VideoGetterFromFile:
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
-    PICTURE = "../Code/calibration_image.JPG"
+    
+    PICTURE = "./calibration_image.JPG"
 
     def __init__(self, scale_factor, src=PICTURE):
         """
 
         """
 
-        self.stream = cv2.imread("../Code/calibration_image.JPG")
+        self.stream = cv2.imread("./calibration_image.JPG")
 
         self.frame = self.stream
 
