@@ -58,6 +58,7 @@ class Game:
         self.throw_in_zone = None
         self.players_rods = None
         self._ranked = [[], []]
+        self.figure_mask = None
         self._team1_figures = None
         self._team2_figures = None
         self._predicted = (0, 0)
@@ -70,7 +71,8 @@ class Game:
         self.game_results = [[0, 0]]
         self.ratio_pxcm = None
         self._new_game = False
-        self._show_contour = False
+        self._show_contour = True
+        self._show_kicker = False
         self.last_speed = [0.0]
 
     def start(self):
@@ -126,14 +128,16 @@ class Game:
         out_frame = frame.copy()
 
         # Draw results in frame
-        #self._put_iterations_per_sec(out_frame, self.__counts_per_sec())
-        self._draw_field_calibrations(out_frame)
-        self._draw_ball(out_frame)
-        self._draw_predicted_ball(out_frame)
-        self._draw_figures(out_frame, self._team1_figures, 1)
-        self._draw_figures(out_frame, self._team2_figures, 2)
+        if self._show_contour:
+            self._draw_ball(out_frame)
+            self._draw_predicted_ball(out_frame)
+            self._draw_figures(out_frame, self._team1_figures, 1)
+            self._draw_figures(out_frame, self._team2_figures, 2)
 
-        return out_frame
+        if self._show_kicker:
+            self._draw_field_calibrations(out_frame)
+
+        return out_frame, self.ball_mask
 
     #################################### FUNCTIONS FOR INTERPRETATION ###########################
 
@@ -166,7 +170,7 @@ class Game:
         hsv_img = cv2.blur(hsv_img, (3, 3))
 
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
-        self.ball_mask = self.__smooth_ball_mask(mask)
+        self.ball_mask = self.__smooth_mask(mask)
 
         objects = self.__find_objects(self.ball_mask, -1)
         objects.flatten()
@@ -236,6 +240,7 @@ class Game:
             self._players_on_field[team_number - 1] = True
             self._ranked[team_number - 1] = self.__load_players_names(objects, team_number)
             player_positions = objects
+            self.figure_mask = mask
             return player_positions
 
         elif len(objects) == 0:
@@ -276,7 +281,7 @@ class Game:
 
         return objects
 
-    def __smooth_ball_mask(self, mask):
+    def __smooth_mask(self, mask):
         """
         The mask created inDetectBallPosition might be noisy.
         :param mask: The mask to smooth (Image with bit depth 1)
@@ -403,8 +408,12 @@ class Game:
         Check the dedicated keys if their where pressed to set flag
         """
         if keyboard.is_pressed("c"):  # start calibration of kicker frame
-            self._show_contour = True
+            self._show_kicker = True
         if keyboard.is_pressed("f"):  # end calibration of kicker frame
+            self._show_kicker = False
+        if keyboard.is_pressed("a"):  # start calibration of kicker frame
+            self._show_contour = True
+        if keyboard.is_pressed("d"):  # end calibration of kicker frame
             self._show_contour = False
         if keyboard.is_pressed("n"):  # start new game
             self._new_game = True
@@ -504,34 +513,33 @@ class Game:
         """
         show football field contour for calibration on frame if a certain button was pressed
         """
-        if self._show_contour:
-            cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
-                     (int(self.field[1][0]), int(self.field[1][1])),
-                     (0, 255, 0), 2)
-            cv2.line(frame, (int(self.field[2][0]), int(self.field[2][1])),
-                     (int(self.field[3][0]), int(self.field[3][1])),
-                     (0, 255, 0), 2)
-            cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
-                     (int(self.field[3][0]), int(self.field[3][1])),
-                     (0, 255, 0), 2)
-            cv2.line(frame, (int(self.field[1][0]), int(self.field[1][1])),
-                     (int(self.field[2][0]), int(self.field[2][1])),
-                     (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(self.goal1[0][0]), int(self.goal1[0][1])),  # Team1, orange
-                          (int(self.goal1[1][0]), int(self.goal1[1][1])),
-                          (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(self.goal2[0][0]), int(self.goal2[0][1])),  # Team2, blau
-                          (int(self.goal2[1][0]), int(self.goal2[1][1])),
-                          (0, 255, 0), 2)
-            cv2.rectangle(frame, (int(self.throw_in_zone[0][0]), int(self.throw_in_zone[0][1])),
-                          (int(self.throw_in_zone[1][0]), int(self.throw_in_zone[1][1])),
-                          (0, 255, 0), 2)
-            for rod in self.players_rods:
-                cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
-                              (int(rod[1][0]), int(rod[1][1])), (0, 255, 255), 2)
-            # for area in self._granted_players_areas_around_rods:
-            #     cv2.rectangle(frame, (int(area[0][0]), int(area[0][1])),
-            #                   (int(area[1][0]), int(area[1][1])), (0, 255, 255), 2)
+        cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
+                 (int(self.field[1][0]), int(self.field[1][1])),
+                 (0, 255, 0), 2)
+        cv2.line(frame, (int(self.field[2][0]), int(self.field[2][1])),
+                 (int(self.field[3][0]), int(self.field[3][1])),
+                 (0, 255, 0), 2)
+        cv2.line(frame, (int(self.field[0][0]), int(self.field[0][1])),
+                 (int(self.field[3][0]), int(self.field[3][1])),
+                 (0, 255, 0), 2)
+        cv2.line(frame, (int(self.field[1][0]), int(self.field[1][1])),
+                 (int(self.field[2][0]), int(self.field[2][1])),
+                 (0, 255, 0), 2)
+        cv2.rectangle(frame, (int(self.goal1[0][0]), int(self.goal1[0][1])),  # Team1, orange
+                      (int(self.goal1[1][0]), int(self.goal1[1][1])),
+                      (0, 255, 0), 2)
+        cv2.rectangle(frame, (int(self.goal2[0][0]), int(self.goal2[0][1])),  # Team2, blau
+                      (int(self.goal2[1][0]), int(self.goal2[1][1])),
+                      (0, 255, 0), 2)
+        cv2.rectangle(frame, (int(self.throw_in_zone[0][0]), int(self.throw_in_zone[0][1])),
+                      (int(self.throw_in_zone[1][0]), int(self.throw_in_zone[1][1])),
+                      (0, 255, 0), 2)
+        for rod in self.players_rods:
+            cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
+                          (int(rod[1][0]), int(rod[1][1])), (0, 255, 255), 2)
+        # for area in self._granted_players_areas_around_rods:
+        #     cv2.rectangle(frame, (int(area[0][0]), int(area[0][1])),
+        #                   (int(area[1][0]), int(area[1][1])), (0, 255, 255), 2)
 
     def _draw_ball(self, frame):
         """

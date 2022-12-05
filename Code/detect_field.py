@@ -74,11 +74,12 @@ class FieldDetector:
         """
         gray = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
         gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (5, 5), 1)
-
-        circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=50, param2=30, minRadius=30, maxRadius=100)
-
-        center_circle = (0, 0, 0)
+        if self.SCALE_FACTOR >=40:
+            gray = cv2.GaussianBlur(gray, (5,5), 1)
+            circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=50, param2=30, minRadius=30, maxRadius=100)
+        else:
+            circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=int(50*self.SCALE_FACTOR/100), param2=int(30*self.SCALE_FACTOR/100), minRadius=int(30*self.SCALE_FACTOR/100), maxRadius=int(100*self.SCALE_FACTOR/100))
+        center_circle = (0, 0, 0) # centerx, centery, radius
         min_dist = 0xFFFFFFFFFFF
         for circle in circles[0]:
             dist_x = abs(circle[0] - calibration_image.shape[1] / 2)
@@ -88,10 +89,20 @@ class FieldDetector:
                 min_dist = dist_x + dist_y
                 center_circle = circle
 
-        rgb = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2RGB)
-        cv2.circle(rgb, (int(center_circle[0]), int(center_circle[1])), int(center_circle[2]), (0, 255, 0), 1)
+        # for circle in circles[0]:
+        #     cv2.circle(gray, (int(circle[0]), int(circle[1])), int(circle[2]), (0, 255, 0), 2)
 
-        self.center = center_circle[0], center_circle[1]
+        if center_circle[2]<42.7:
+            center_circle[0] = calibration_image.shape[1] / 2
+            center_circle[1] = calibration_image.shape[0] / 2
+            center_circle[2] = (114*self.SCALE_FACTOR/100)
+
+        cv2.circle(gray, (int(center_circle[0]), int(center_circle[1])), int(center_circle[2]), (0, 255, 0), 2)
+
+        cv2.imwrite("gray.JPG", gray)
+
+        self.center = int(center_circle[0]), int(center_circle[1])
+        #print(center_circle)
         radius = center_circle[2]
         self.ratio_pxcm = radius / 9.4
 
@@ -158,8 +169,8 @@ class FieldDetector:
 
         distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / 8
 
-        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+15), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (0.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+15), int(match_field[1][1])]],
+        players_rods = np.array([[[int(match_field[0][0] + (0.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+12), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (0.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+12), int(match_field[1][1])]],
                                  [[int(match_field[0][0] + (1.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+9), int(match_field[0][1])],
                                   [int(match_field[0][0] + (1.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))+9), int(match_field[1][1])]],
                                  [[int(match_field[0][0] + (2.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))+9), int(match_field[0][1])],
@@ -172,8 +183,8 @@ class FieldDetector:
                                   [int(match_field[0][0] + (5.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-9), int(match_field[1][1])]],
                                  [[int(match_field[0][0] + (6.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-9), int(match_field[0][1])],
                                   [int(match_field[0][0] + (6.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-9), int(match_field[1][1])]],
-                                 [[int(match_field[0][0] + (7.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-15), int(match_field[0][1])],
-                                  [int(match_field[0][0] + (7.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-15), int(match_field[1][1])]]])
+                                 [[int(match_field[0][0] + (7.5*distance_between_rods-int(16*self.SCALE_FACTOR/100))-12), int(match_field[0][1])],
+                                  [int(match_field[0][0] + (7.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-12), int(match_field[1][1])]]])
 
         return [match_field, goal1, goal2, throw_in_zone, players_rods]
 

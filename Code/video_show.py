@@ -12,7 +12,7 @@ class VideoShower:
         initialize new grabbed camera frame
         """
         self.frame = frame
-        #self.ball_mask = ball_mask
+        self.ball_mask = ball_mask
 
         self.stopped = False
 
@@ -30,7 +30,7 @@ class VideoShower:
         """
         while not self.stopped:
             cv2.imshow("Video", self.frame)
-            #cv2.imshow("Ball mask", self.ball_mask)
+            cv2.imshow("Ball mask", self.ball_mask)
             #cv2.waitKey(0)
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True

@@ -24,7 +24,7 @@ def main():
     first_frame = True
     start_gui = True
 
-    SCALE_PERCENT = 40  # percent of original size
+    SCALE_PERCENT = 25  # percent of original size
 
     video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
     #video_getter = VideoGetterFromFile(SCALE_PERCENT, VideoGetterFromFile.PICTURE).start()
@@ -48,6 +48,11 @@ def main():
         x2 = int(round(ball_position_at_center_point[0] + (calibration_image.shape[1] / 10), 0))
         y1 = int(round(ball_position_at_center_point[1] - (calibration_image.shape[0] / 10), 0))
         y2 = int(round(ball_position_at_center_point[1] + (calibration_image.shape[0] / 10), 0))
+
+        # x1 = int(round(calibration_image.shape[1]/2 - (calibration_image.shape[1] / 10), 0))
+        # x2 = int(round(calibration_image.shape[1]/2 + (calibration_image.shape[1] / 10), 0))
+        # y1 = int(round(calibration_image.shape[0]/2 - (calibration_image.shape[0] / 10), 0))
+        # y2 = int(round(calibration_image.shape[0]/2 + (calibration_image.shape[0] / 10), 0))
 
         image_crop = calibration_image[y1:y2, x1:x2]
 
@@ -91,13 +96,13 @@ def main():
                     cv2.imwrite("./calibration_image.JPG", frame)
 
         if not first_frame:
-            frame = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
+            frame, ball_mask = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
             if start_gui:
                 gui = GUI(game).start()
                 start_gui = False
             if not start_gui:
                 gui.frame = frame
-            # video_shower.ball_mask = ball_mask
+            video_shower.ball_mask = ball_mask
             video_shower.frame = frame
 
 if __name__ == "__main__":
