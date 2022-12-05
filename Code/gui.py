@@ -37,27 +37,6 @@ class GUI:
 
         # inner frame 1
 
-        game_configuration = [
-            [sg.Text("Game Config", text_color='orange', font=(self._FONT, 15))],
-            [sg.Text("Team 1", font=(self._FONT, 15), text_color='white', background_color="orange", key="-team_1-", expand_x=True, justification='c')],
-            [sg.Text("Team 2", font=(self._FONT, 15), text_color='white', background_color="orange", key="-team_2-", expand_x=True, justification='c')],
-            [sg.Text("Ball", font=(self._FONT, 15), text_color='white', background_color="orange", key="-ball-", expand_x=True, justification='c')]
-        ]
-
-        last_games = [
-            [sg.Text("Last Games", text_color='orange', font=(self._FONT, 15))],
-            [sg.Text("", key='-last_game_team1-', font=(self._FONT, 15)), sg.Text(" : ", font=(self._FONT, 15)), sg.Text("", key='-last_game_team2-', font=(self._FONT, 15))],
-            [sg.Text("", key='-second_last_game_team1-', font=(self._FONT, 15)), sg.Text(" : ", font=(self._FONT, 15)), sg.Text("", key='-second_last_game_team2-', font=(self._FONT, 15))],
-            [sg.Text("", key='-third_last_game_team1-', font=(self._FONT, 15)), sg.Text(" : ", font=(self._FONT, 15)), sg.Text("", key='-third_last_game_team2-', font=(self._FONT, 15))]
-        ]
-
-        configs = [
-            [sg.Frame("", game_configuration, expand_x=True, expand_y=True, element_justification='c'),
-             sg.Frame("", last_games, expand_x=True, expand_y=True, element_justification='c')]
-        ]
-
-        # inner frame 2
-
         game_score_and_speed = [
             [sg.Text('SIT Smart Kicker', text_color='orange', font=(self._FONT, 30))],
             [sg.Button('goal+1', key="-manual_game_counter_team_1_up-", button_color='grey', font=(self._FONT, 8)),sg.Button('goal-1', key="-manual_game_counter_team_1_down-", button_color='grey', font=(self._FONT, 8)), sg.Button('goal+1', key="-manual_game_counter_team_2_up-", button_color='grey', font=(self._FONT, 8)), sg.Button('goal-1', key="-manual_game_counter_team_2_down-", button_color='grey', font=(self._FONT, 8))],
@@ -66,15 +45,46 @@ class GUI:
             [sg.Text("")],
             [sg.Text('Ball Speed:', font=(self._FONT, 20)), sg.Text("", key='-ball_speed-', font=(self._FONT, 20))],
             [sg.Text('FPS:', font=(self._FONT, 10), text_color='grey'), sg.Text("", key='-counts_per_second-', font=(self._FONT, 10), text_color='grey')],
-            [sg.Text('Press "S" to save configuration image',key='-config_img-', font=(self._FONT, 10))],
-            [sg.Text('Press "N" to start new game', font=(self._FONT, 10))]
+            [sg.Text('Press S to save configuration image',key='-config_img-', font=(self._FONT, 10))]
+        ]
+
+        # inner frame 2
+
+        game_configuration = [
+            [sg.Text("Game Config", text_color='orange', font=(self._FONT, 15))],
+            [sg.Text("Team 1", font=(self._FONT, 10), text_color='white', background_color="orange", key="-team_1-", expand_x=True, justification='c')],
+            [sg.Text("Team 2", font=(self._FONT, 10), text_color='white', background_color="orange", key="-team_2-", expand_x=True, justification='c')],
+            [sg.Text("Ball", font=(self._FONT, 10), text_color='white', background_color="orange", key="-ball-", expand_x=True, justification='c')]
+        ]
+
+        last_games = [
+            [sg.Text("Last Games", text_color='orange', font=(self._FONT, 15))],
+            [sg.Text("", key='-last_game_team1-', font=(self._FONT, 10)), sg.Text(" : ", font=(self._FONT, 10)), sg.Text("", key='-last_game_team2-', font=(self._FONT, 10))],
+            [sg.Text("", key='-second_last_game_team1-', font=(self._FONT, 10)), sg.Text(" : ", font=(self._FONT, 10)), sg.Text("", key='-second_last_game_team2-', font=(self._FONT, 10))],
+            [sg.Text("", key='-third_last_game_team1-', font=(self._FONT, 10)), sg.Text(" : ", font=(self._FONT, 10)), sg.Text("", key='-third_last_game_team2-', font=(self._FONT, 10))]
+        ]
+
+
+        configs = [
+            [sg.Frame("", game_configuration, expand_x=True, expand_y=True, element_justification='c'),
+             sg.Frame("", last_games, expand_x=True, expand_y=True, element_justification='c')]
+        ]
+
+        # inner frame 3
+
+        key_bindings = [
+            [sg.Text("Key Bindings", text_color='orange', font=(self._FONT, 15))],
+            [sg.Text('Press N to start new game', font=(self._FONT, 10))],
+            [sg.Text("press C to show kicker, press F to hide kicker",font=(self._FONT, 10))],
+            [sg.Text("press A to show contours, press D to hide contours", font=(self._FONT, 10))]
         ]
 
         # left frame
 
         basic_information = [
             [sg.Frame("", game_score_and_speed, expand_x=True, expand_y=True, element_justification='c')],
-            [sg.Frame("", configs, border_width=0, expand_x=True, expand_y=True)]
+            [sg.Frame("", configs, border_width=0, expand_x=True, expand_y=True)],
+            [sg.Frame("", key_bindings, expand_x=True, expand_y=True, element_justification='c')]
         ]
 
         game_stats = [
@@ -120,8 +130,8 @@ class GUI:
         # ]
 
         self._layout = [
-            [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 600)),
-             sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 600))]
+            [sg.Frame("Game Information", game_stats, border_width=0, size=(325, 650)),
+             sg.Frame("Game Statistics", game_analysis, border_width=0, size=(325, 650))]
         ]
 
     def start(self):
