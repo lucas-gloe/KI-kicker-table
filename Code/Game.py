@@ -137,7 +137,7 @@ class Game:
         if self._show_kicker:
             self._draw_field_calibrations(out_frame)
 
-        return out_frame, self.ball_mask
+        return out_frame
 
     #################################### FUNCTIONS FOR INTERPRETATION ###########################
 
@@ -501,13 +501,6 @@ class Game:
             self.last_speed.append(kmh)
 
     #####################################  Drawing ON FRAME ######################################################
-
-    # def _put_iterations_per_sec(self, tracked_frame, iterations_per_sec):
-    #     """
-    #     Add iterations per second text to lower-left corner of a frame.
-    #     """
-    #     cv2.putText(tracked_frame, "{:.0f} iterations/sec".format(iterations_per_sec), (50, 900),
-    #                 cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255))
 
     def _draw_field_calibrations(self, frame):
         """

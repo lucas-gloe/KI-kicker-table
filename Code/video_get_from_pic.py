@@ -3,7 +3,7 @@ from threading import Thread
 import cv2
 
 
-class VideoGetterFromFile:
+class VideoGetterFromPic:
     """
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
@@ -15,15 +15,14 @@ class VideoGetterFromFile:
         """
 
         """
+        self.count = 0
+        self.frames_to_process = []
 
         self.stream = cv2.imread("./calibration_image.JPG")
-
         self.frame = self.stream
-
-
+        self.frames_to_process.append(self.frame)
 
         self.grabbed = True
-
         self.stopped = False
 
     def start(self):
@@ -41,11 +40,16 @@ class VideoGetterFromFile:
             if not self.grabbed:
                 self.stop()
             else:
-                self.stopped, self.frame = self.stream
-                self.stopped = True
+                self.frame = self.stream
+                self.frames_to_process.append(self.frame)
+                self.stopped = False
+
+    def get_frame(self):
+        return self.frames_to_process[0]
 
     def stop(self):
         """
 
         """
         self.stopped = True
+        self.stream.release()

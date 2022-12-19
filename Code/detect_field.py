@@ -19,6 +19,7 @@ class FieldDetector:
         self.angle = None
         self.SCALE_FACTOR = scale_factor
         self.HALF_WIDTH_GOAL = 110
+        self.counter = 0
 
     def get_angle(self, calibration_image):
         """
@@ -187,6 +188,16 @@ class FieldDetector:
                                   [int(match_field[0][0] + (7.5*distance_between_rods+int(16*self.SCALE_FACTOR/100))-12), int(match_field[1][1])]]])
 
         return [match_field, goal1, goal2, throw_in_zone, players_rods]
+
+    def draw_calibration_marker(self, frame):
+        cv2.circle(frame, (int(frame.shape[1] / 2), int(frame.shape[0] / 2)), int(18 * self.SCALE_FACTOR / 100),
+                   (30, 144, 255), 1)
+        cv2.circle(frame, (int(frame.shape[1] / 2 - int(85 * self.SCALE_FACTOR / 100)), int(frame.shape[0] / 2)),
+                   int(18 * self.SCALE_FACTOR / 100), (30, 144, 255), 1)
+        cv2.circle(frame, (int(frame.shape[1] / 2 + int(85 * self.SCALE_FACTOR / 100)), int(frame.shape[0] / 2)),
+                   int(18 * self.SCALE_FACTOR / 100), (30, 144, 255), 1)
+        self.counter = self.counter + 1
+        return frame
 
     def get_var(self, _type):
         """

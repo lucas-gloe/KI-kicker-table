@@ -75,8 +75,8 @@ class GUI:
         key_bindings = [
             [sg.Text("Key Bindings", text_color='orange', font=(self._FONT, 15))],
             [sg.Text('Press N to start new game', font=(self._FONT, 10))],
-            [sg.Text("press C to show kicker, press F to hide kicker",font=(self._FONT, 10))],
-            [sg.Text("press A to show contours, press D to hide contours", font=(self._FONT, 10))]
+            [sg.Text("Press C to show kicker, press F to hide kicker",font=(self._FONT, 10))],
+            [sg.Text("Press A to show contours, press D to hide contours", font=(self._FONT, 10))]
         ]
 
         # left frame
@@ -130,8 +130,8 @@ class GUI:
         # ]
 
         self._layout = [
-            [sg.Frame("Game Information", game_stats, border_width=0, size=(325, 650)),
-             sg.Frame("Game Statistics", game_analysis, border_width=0, size=(325, 650))]
+            [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 700)),
+             sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 700))]
         ]
 
     def start(self):
@@ -176,7 +176,7 @@ class GUI:
         self.window["-second_last_game_team2-"].update(self.game.check_game_var("-second_last_game_team2-"))
         self.window["-third_last_game_team1-"].update(self.game.check_game_var("-third_last_game_team1-"))
         self.window["-third_last_game_team2-"].update(self.game.check_game_var("-third_last_game_team2-"))
-        if os.path.exists("./calibration_image.JPG"):
+        if os.path.exists("../Bilder/calibration_image.JPG"):
             self.window["-config_img-"].update("configuration image saved!")
             self.window["-counts_per_second-"].update(round(self.game.check_game_var("-counts_per_second-"), 0))
         if event == "-manual_game_counter_team_1_up-":
