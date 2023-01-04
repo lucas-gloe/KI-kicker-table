@@ -7,7 +7,7 @@ class VideoGetter:
     Class that continuously gets frames from a VideoCapture object
     with a dedicated thread.
     """
-    # constances
+    # constants
     DEFAULT_CAM = 0
     CAMERA_1 = 1
 

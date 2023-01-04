@@ -20,7 +20,7 @@ class Game:
         Initialize game variables and properties
         """
 
-        # constances
+        # constants
         self.SCALE_FACTOR = scale_percent
         self.RODWIDTH = 70 * self.SCALE_FACTOR / 100
         self.HALF_PLAYERS_WIDTH = 20 * self.SCALE_FACTOR / 100
@@ -31,7 +31,7 @@ class Game:
         self.results_from_calibration = True
         self._first_frame = True
         self._current_ball_position = [-1,-1]
-        self._ball_positions = [[-1,-1]]
+        self.ball_positions = [[-1, -1]]
         self.predicted_value_added = False
         self.center_x = 0
         self.center_y = 0
@@ -133,11 +133,12 @@ class Game:
             self._draw_predicted_ball(out_frame)
             self._draw_figures(out_frame, self._team1_figures, 1)
             self._draw_figures(out_frame, self._team2_figures, 2)
+            self._locate_past_ball_positions(out_frame)
 
         if self._show_kicker:
             self._draw_field_calibrations(out_frame)
 
-        return out_frame
+        return out_frame, self.ball_mask
 
     #################################### FUNCTIONS FOR INTERPRETATION ###########################
 
@@ -215,7 +216,7 @@ class Game:
             else:
                 self._current_ball_position = [-1, -1]
 
-        self._ball_positions.append(self._current_ball_position)
+        self.ball_positions.append(self._current_ball_position)
 
     def _track_players(self, team_number, hsv_img):
         """
@@ -401,6 +402,19 @@ class Game:
     def __rgb2hex(self, color):
         return '#%02X%02X%02X' % (color[0][0][0], color[0][0][1], color[0][0][2])
 
+    def _locate_past_ball_positions(self, frame):
+        past_ball_positions_to_show = self.ball_positions[-20:-1]
+        past_ball_positions_to_show = [s for s in past_ball_positions_to_show if s != [-1,-1]]
+        # loop over the set of tracked points
+        for i in range(1, len(past_ball_positions_to_show)):
+            # if either of the tracked points are None, ignore them
+            if past_ball_positions_to_show[i - 1] is None or past_ball_positions_to_show[i] is None:
+                continue
+            # otherwise, compute the thickness of the line and draw the connecting lines
+            thickness = int(np.sqrt((64*(self.SCALE_FACTOR/100)) / float(i + 1)) * 2.5)
+            #cv2.line(frame, past_ball_positions_to_show[i - 1], past_ball_positions_to_show[i], (0, 0, 255), thickness)
+            cv2.circle(frame, past_ball_positions_to_show[i],4, (0, 0, 255), -1)
+
     ##################################### GAME STATS ##############################################################
 
     def _check_keybindings(self):
@@ -417,7 +431,7 @@ class Game:
             self._show_contour = False
         if keyboard.is_pressed("n"):  # start new game
             self._new_game = True
-            self._ball_positions = []
+            self.ball_positions = []
             self.last_speed = [0.0]
 
 
@@ -427,21 +441,21 @@ class Game:
         """
         if len(self.last_speed) >= 200:
             self.last_speed.pop(0)
-        if len(self._ball_positions) >= 1000:
-            self._ball_positions.pop(0)
+        # if len(self._ball_positions) >= 1000:
+        #     self._ball_positions.pop(0)
 
     def _count_game_score(self):
         """
         Count game score +1  of a certain team if a goal was shot
         """
-        if len(self._ball_positions) > 1 and 0 < self._ball_positions[-2][0] < self.goal1[1][0] and self.goal1[0][1] < \
-                self._ball_positions[-2][1] < self.goal1[1][1] and self._ball_positions[-1] == [-1, -1] and \
+        if len(self.ball_positions) > 1 and 0 < self.ball_positions[-2][0] < self.goal1[1][0] and self.goal1[0][1] < \
+                self.ball_positions[-2][1] < self.goal1[1][1] and self.ball_positions[-1] == [-1, -1] and \
                 self._ball_reenters_game:
             self._goal1_detected = True
             self.goalInCurrentFrame = True
 
-        if len(self._ball_positions) > 1 and self._ball_positions[-2][0] > self.goal2[0][0] and self.goal2[0][1] < \
-                self._ball_positions[-2][1] < self.goal2[1][1] and self._ball_positions[-1] == [-1, -1] and \
+        if len(self.ball_positions) > 1 and self.ball_positions[-2][0] > self.goal2[0][0] and self.goal2[0][1] < \
+                self.ball_positions[-2][1] < self.goal2[1][1] and self.ball_positions[-1] == [-1, -1] and \
                 self._ball_reenters_game:
             self._goal2_detected = True
             self.goalInCurrentFrame = True
@@ -458,9 +472,9 @@ class Game:
         Detect if the ball reenters the field in the middle section of the Kicker after a goal was shot
         """
         if self._goal1_detected or self._goal2_detected:
-            if len(self._ball_positions) >= 2:
-                if self.throw_in_zone[0][0] < self._ball_positions[-1][0] < self.throw_in_zone[1][0] and \
-                        self._ball_positions[-2] == [-1, -1]:
+            if len(self.ball_positions) >= 2:
+                if self.throw_in_zone[0][0] < self.ball_positions[-1][0] < self.throw_in_zone[1][0] and \
+                        self.ball_positions[-2] == [-1, -1]:
                     self._goal1_detected = False
                     self._goal2_detected = False
                     self._results = True
@@ -480,11 +494,11 @@ class Game:
         """
         measure the current speed of the ball
         """
-        if len(self._ball_positions) >= 3 and self._ball_positions[-1] != [-1, -1]:
+        if len(self.ball_positions) >= 3 and self.ball_positions[-1] != [-1, -1]:
             # safe ball positions into an numpyArray
-            current_position = np.array(self._ball_positions[-1])
-            middle_position = np.array(self._ball_positions[-2])
-            last_position = np.array(self._ball_positions[-3])
+            current_position = np.array(self.ball_positions[-1])
+            middle_position = np.array(self.ball_positions[-2])
+            last_position = np.array(self.ball_positions[-3])
 
             # measure the distance between the positions of the ball
             distance1 = np.linalg.norm(current_position - middle_position)
@@ -530,6 +544,8 @@ class Game:
         for rod in self.players_rods:
             cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
                           (int(rod[1][0]), int(rod[1][1])), (0, 255, 255), 2)
+
+        # for testing
         # for area in self._granted_players_areas_around_rods:
         #     cv2.rectangle(frame, (int(area[0][0]), int(area[0][1])),
         #                   (int(area[1][0]), int(area[1][1])), (0, 255, 255), 2)
@@ -551,6 +567,7 @@ class Game:
         """
         if self._current_ball_position == [-1, -1]:
             cv2.circle(frame, (self._predicted[0], self._predicted[1]), int(16*self.SCALE_FACTOR/100), (0, 255, 255), 2)
+
 
     def _draw_figures(self, frame, player_positions, team_number):
         """

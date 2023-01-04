@@ -1,11 +1,12 @@
 from game import Game
 from video_get import VideoGetter
-from video_show import VideoShower
 from video_get_from_pic import VideoGetterFromPic
 from video_get_from_vid import VideoGetterFromVid
+from video_show import VideoShower
 from gui import GUI
 from detect_color import ColorTracker
 from detect_field import FieldDetector
+from analysis import Analysis
 
 import detect_field
 import detect_color
@@ -32,6 +33,8 @@ def main():
 
     video_shower = VideoShower(video_getter.get_frame(), video_getter.get_frame()).start()
     game = Game(SCALE_PERCENT).start()
+    analysis = Analysis().start()
+    gui = GUI(game, analysis).start()
 
     detected_field = detect_field.FieldDetector(SCALE_PERCENT)
     detected_color = detect_color.ColorTracker(SCALE_PERCENT)
@@ -70,7 +73,7 @@ def main():
         if video_getter.stopped or video_shower.stopped:
             #video_shower.stop()
             video_getter.stop()
-            gui.stop()
+            #gui.stop()
             break
 
         frame = video_getter.get_frame()
@@ -91,15 +94,11 @@ def main():
                     cv2.imwrite("./calibration_image.JPG", out_frame)
 
         if not first_frame:
-            out_frame = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
-            if start_gui:
-                gui = GUI(game).start()
-                start_gui = False
-            if not start_gui:
-                gui.frame = out_frame
-            #video_shower.ball_mask = ball_mask
+            out_frame, ball_mask = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
+            gui.frame = out_frame
 
         video_shower.frames_to_show.append(out_frame)
+        video_shower.balls_to_show.append(ball_mask)
         if len(video_getter.frames_to_process) > 1:
             video_getter.frames_to_process.pop(0)
         print(len(video_getter.frames_to_process), "getter")

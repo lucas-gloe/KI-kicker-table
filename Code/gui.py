@@ -10,7 +10,7 @@ class GUI:
     Class which creates and updates the gui windows for the game stats
     """
 
-    def __init__(self, game, frame=None):
+    def __init__(self, game, analysis, frame=None):
         """
         Define the gui and its dependings
         """
@@ -21,6 +21,7 @@ class GUI:
         self.window = None
         self.stopped = False
         self.game = game
+        self.analysis = analysis
         self.frame = frame
 
         # layout of the GUI
@@ -97,6 +98,7 @@ class GUI:
 
         heat_map = [
             [sg.Text("Heat Map", text_color='orange', font=(self._FONT, 15))]
+            #[sg.Image(filename="", key="-heat_map-")]
         ]
 
         blank_frame = [
@@ -176,6 +178,7 @@ class GUI:
         self.window["-second_last_game_team2-"].update(self.game.check_game_var("-second_last_game_team2-"))
         self.window["-third_last_game_team1-"].update(self.game.check_game_var("-third_last_game_team1-"))
         self.window["-third_last_game_team2-"].update(self.game.check_game_var("-third_last_game_team2-"))
+
         if os.path.exists("../Bilder/calibration_image.JPG"):
             self.window["-config_img-"].update("configuration image saved!")
             self.window["-counts_per_second-"].update(round(self.game.check_game_var("-counts_per_second-"), 0))
@@ -191,3 +194,5 @@ class GUI:
         if event == "-manual_game_counter_team_2_down-":
             self.game.check_game_var("-manual_game_counter_team_2_down-")
             self.window["-score_team_2-"].update(self.game.check_game_var("-score_team_2-"))
+
+        #self.window["-heat_map-"].update(data=cv2.imencode(".ppm", self.analysis.check_analysis_var("-heat_map-")[1].tobytes()))

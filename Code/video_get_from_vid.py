@@ -9,7 +9,9 @@ class VideoGetterFromVid:
     with a dedicated thread.
     """
 
-    VID = "../Video/1080p/240fps/schuss_langsam.mov"
+    VID = "../Video/1080p/240fps/test_schuss_lang.mov"
+    #VID = "../Video/1080p/30fps/test_schuss_kurz.mov"
+    #VID = "../Video/1080p/30fps/test_vid.mov"
 
     def __init__(self, scale_factor, src=VID):
         """
