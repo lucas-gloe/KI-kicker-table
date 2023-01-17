@@ -44,7 +44,7 @@ class GUI:
             [sg.Text("", key='-score_team_1-',font=(self._FONT, 45)), sg.Text(" : ", font=(self._FONT, 20)), sg.Text("", key='-score_team_2-', font=(self._FONT, 45))],
             [sg.Text("Team 1", font=(self._FONT, 20)), sg.Text("Team 2", font=(self._FONT, 20))],
             [sg.Text("")],
-            [sg.Text('Ball Speed:', font=(self._FONT, 20)), sg.Text("", key='-ball_speed-', font=(self._FONT, 20))],
+            [sg.Text('Ball Speed:', font=(self._FONT, 10)), sg.Text("NOT SET YET", key='-ball_speed-', font=(self._FONT, 10))],
             [sg.Text('FPS:', font=(self._FONT, 10), text_color='grey'), sg.Text("", key='-counts_per_second-', font=(self._FONT, 10), text_color='grey')],
             [sg.Text('Press S to save configuration image',key='-config_img-', font=(self._FONT, 10))]
         ]
@@ -171,7 +171,7 @@ class GUI:
         self.window["-ball-"].update(background_color=self.game.check_game_var("-ball-"))
         self.window["-score_team_1-"].update(self.game.check_game_var("-score_team_1-"))
         self.window["-score_team_2-"].update(self.game.check_game_var("-score_team_2-"))
-        self.window["-ball_speed-"].update(self.game.check_game_var("-ball_speed-"))
+        # self.window["-ball_speed-"].update(self.game.check_game_var("-ball_speed-"))
         self.window["-last_game_team1-"].update(self.game.check_game_var("-last_game_team1-"))
         self.window["-last_game_team2-"].update(self.game.check_game_var("-last_game_team2-"))
         self.window["-second_last_game_team1-"].update(self.game.check_game_var("-second_last_game_team1-"))

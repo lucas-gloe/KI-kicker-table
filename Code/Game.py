@@ -124,7 +124,7 @@ class Game:
         self._count_game_score()
         self._detect_ball_reentering()
         self._reset_game()
-        self._ball_speed_tracking()
+        # self._ball_speed_tracking()
 
         out_frame = frame.copy()
 
@@ -492,29 +492,29 @@ class Game:
             self.counter_team2 = 0
             self._results = False
 
-    def _ball_speed_tracking(self):
-        """
-        measure the current speed of the ball
-        """
-        if len(self.ball_positions) >= 3 and self.ball_positions[-1] != [-1, -1]:
-            # safe ball positions into an numpyArray
-            current_position = np.array(self.ball_positions[-1])
-            middle_position = np.array(self.ball_positions[-2])
-            last_position = np.array(self.ball_positions[-3])
-
-            # measure the distance between the positions of the ball
-            distance1 = np.linalg.norm(current_position - middle_position)
-            distance2 = np.linalg.norm(middle_position - last_position)
-            distance = (distance1 + distance2) / 2
-
-            # convert the travelled distance in pixel per frame into traveled distance km per hour
-            cm_distance_per_frame = distance / self.ratio_pxcm
-            m_distance_per_frame = cm_distance_per_frame / 100
-            m_distance_per_second = m_distance_per_frame / self.__counts_per_sec()
-            kmh = m_distance_per_second * 3.6
-
-            kmh = round(kmh, 2)
-            self.last_speed.append(kmh)
+    # def _ball_speed_tracking(self):
+    #     """
+    #     measure the current speed of the ball
+    #     """
+    #     if len(self.ball_positions) >= 3 and self.ball_positions[-1] != [-1, -1]:
+    #         # safe ball positions into an numpyArray
+    #         current_position = np.array(self.ball_positions[-1])
+    #         middle_position = np.array(self.ball_positions[-2])
+    #         last_position = np.array(self.ball_positions[-3])
+    #
+    #         # measure the distance between the positions of the ball
+    #         distance1 = np.linalg.norm(current_position - middle_position)
+    #         distance2 = np.linalg.norm(middle_position - last_position)
+    #         distance = (distance1 + distance2) / 2
+    #
+    #         # convert the travelled distance in pixel per frame into traveled distance km per hour
+    #         cm_distance_per_frame = distance / self.ratio_pxcm
+    #         m_distance_per_frame = cm_distance_per_frame / 100
+    #         m_distance_per_second = m_distance_per_frame / self.__counts_per_sec()
+    #         kmh = m_distance_per_second * 3.6
+    #
+    #         kmh = round(kmh, 2)
+    #         self.last_speed.append(kmh)
 
     #####################################  Drawing ON FRAME ######################################################
 
@@ -606,8 +606,8 @@ class Game:
             return self.counter_team1
         elif '-score_team_2-' == _type:
             return self.counter_team2
-        elif '-ball_speed-' == _type:
-            return max(self.last_speed)
+        # elif '-ball_speed-' == _type:
+        #     return max(self.last_speed)
         elif "-last_game_team1-" == _type:
             return self.game_results[-1][0]
         elif "-last_game_team2-" == _type:
