@@ -9,8 +9,8 @@ class VideoGetterFromVid:
     with a dedicated thread.
     """
 
-    VID = "../Video/1080p/240fps/test_schuss_lang.mov"
-    #VID = "../Video/1080p/30fps/test_schuss_kurz.mov"
+    #VID = r"C:\Users\gloec\OneDrive\Dokumente\GitHub\KI-kicker-table\OpenCV\Video\1080p\240fps\test_schuss_lang.mov"
+    VID = r"C:\Users\gloec\OneDrive\Dokumente\GitHub\KI-kicker-table\OpenCV\Video\1080p\120fps\schuss_schnell.MOV"
     #VID = "../Video/1080p/30fps/test_vid.mov"
 
     def __init__(self, scale_factor, src=VID):
@@ -20,17 +20,19 @@ class VideoGetterFromVid:
         self.SCALE_PERCENT = scale_factor  # percent of original size
         self.frames_to_process = []
 
-
         self.stream = cv2.VideoCapture(src)
 
+        # read frame
         (self.grabbed, frame) = self.stream.read()
 
-        # rezising frame for speed optimisation
+        # resizing frame for speed optimisation
         width = int(frame.shape[1] * self.SCALE_PERCENT / 100)
         height = int(frame.shape[0] * self.SCALE_PERCENT / 100)
         self.dim = (width, height)
 
-        self.frame = cv2.resize(frame, self.dim, interpolation=cv2.INTER_AREA)
+        self.frame = cv2.resize(frame, self.dim)
+
+        # TODO: ohne kalibrieung direkt in den shower packen ohne game class
         self.frames_to_process.append(self.frame)
 
         self.grabbed = True
@@ -47,14 +49,15 @@ class VideoGetterFromVid:
 
     def get(self):
         """
-        get new frame from camerastream
+        get new frame from camera stream
         """
         while not self.stopped:
+            # TODO: sicherstellen, dass jeder frame auch ein neuer ist
             self.grabbed, frame = self.stream.read()
             if not self.grabbed:
                 self.stop()
             else:
-                self.frame = cv2.resize(frame, self.dim, interpolation=cv2.INTER_AREA)
+                self.frame = cv2.resize(frame, self.dim)
                 self.frames_to_process.append(self.frame)
                 self.stopped = False
 

@@ -10,9 +10,9 @@ class GUI:
     Class which creates and updates the gui windows for the game stats
     """
 
-    def __init__(self, game, analysis, frame=None):
+    def __init__(self, game, frame=None):
         """
-        Define the gui and its dependings
+        Define the gui and its depends
         """
 
         # creating variables and constants
@@ -21,7 +21,7 @@ class GUI:
         self.window = None
         self.stopped = False
         self.game = game
-        self.analysis = analysis
+        #self.analysis = analysis
         self.frame = frame
 
         # layout of the GUI
@@ -31,10 +31,10 @@ class GUI:
         ################# Game frame #######################################
 
         game_frame = [
+
             [sg.Image(filename="", key="-frame-")]
         ]
-
-        ################# left frame with basic game infos #################
+       ################# left frame with basic game infos #################
 
         # inner frame 1
 

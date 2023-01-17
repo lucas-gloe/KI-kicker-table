@@ -20,6 +20,8 @@ def main():
     """
     Main thread serves only to pass frames between VideoGet, game and
     VideoShow objects/threads.
+    # TODO: Kommentare der Funktionen erweitern
+    # TODO: Multithreading oder multiprocessing -> wo unterschied?
     """
     first_frame = True
     start_gui = True
@@ -33,8 +35,8 @@ def main():
 
     video_shower = VideoShower(video_getter.get_frame(), video_getter.get_frame()).start()
     game = Game(SCALE_PERCENT).start()
-    analysis = Analysis().start()
-    gui = GUI(game, analysis).start()
+    #analysis = Analysis().start()
+    gui = GUI(game).start()
 
     detected_field = detect_field.FieldDetector(SCALE_PERCENT)
     detected_color = detect_color.ColorTracker(SCALE_PERCENT)
@@ -101,6 +103,7 @@ def main():
         video_shower.balls_to_show.append(ball_mask)
         if len(video_getter.frames_to_process) > 1:
             video_getter.frames_to_process.pop(0)
+
         print(len(video_getter.frames_to_process), "getter")
         print(len(video_shower.frames_to_show), "shower")
 

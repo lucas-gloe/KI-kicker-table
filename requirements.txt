@@ -7,3 +7,4 @@ tqdm~=4.64.1
 matplotlib~=3.6.2
 seaborn~=0.12.1
 mplsoccer~=1.1.9
+numba~=0.56.4

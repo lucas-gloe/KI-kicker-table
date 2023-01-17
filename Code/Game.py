@@ -3,11 +3,11 @@ from datetime import datetime
 import cv2
 import keyboard
 import numpy as np
+from numba import njit, jit, cuda
 
 from kalman_filter import KalmanFilter
 from detect_field import FieldDetector
 from detect_color import ColorTracker
-
 
 class Game:
     """
@@ -24,6 +24,7 @@ class Game:
         self.SCALE_FACTOR = scale_percent
         self.RODWIDTH = 70 * self.SCALE_FACTOR / 100
         self.HALF_PLAYERS_WIDTH = 20 * self.SCALE_FACTOR / 100
+        self.KERNEL = 3
 
         # variables
         self._start_time = None
@@ -74,6 +75,7 @@ class Game:
         self._show_contour = True
         self._show_kicker = False
         self.last_speed = [0.0]
+        self._max_bounding_boxes = None
 
     def start(self):
         """
@@ -103,18 +105,17 @@ class Game:
             self.__team2_color_from_calibration = team2_color
             self.field = field
             self.ratio_pxcm = ratio_pxcm
+            self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(self.field) #könnte auch nur einmal ausführen reichen
+            self._colors = [self.__ball_color_from_calibration, self.__team2_color_from_calibration, self.__team1_color_from_calibration]
+            self._load_objects_colors() #könnte auch nur einmal ausführen reichen, je nachdem ob eine neukalibrierung stattfindet
             self.results_from_calibration = False
-
-        self._colors = [self.__ball_color_from_calibration, self.__team2_color_from_calibration, self.__team1_color_from_calibration]
 
         # Frame interpretation
         hsv_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        self.match_field, self.goal1, self.goal2, self.throw_in_zone, self.players_rods = self._df.load_game_field_properties(
-            field)
+
         self._team1_figures = self._track_players(1, hsv_img)
         self._team2_figures = self._track_players(2, hsv_img)
         self._track_ball(hsv_img)
-        self._load_objects_colors()
 
         self._check_keybindings()
         self._check_variables()
@@ -168,7 +169,7 @@ class Game:
         upper_color = np.array(upper_color)
 
         # blurring image to prevent false object detection
-        hsv_img = cv2.blur(hsv_img, (3, 3))
+        hsv_img = cv2.GaussianBlur(hsv_img, (3, 3), cv2.BORDER_DEFAULT)
 
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
         self.ball_mask = self.__smooth_mask(mask)
@@ -235,7 +236,6 @@ class Game:
         upper_color = np.array(upper_color)
 
         mask = cv2.inRange(hsv_img, lower_color, upper_color)
-
         objects = self.__find_objects(mask, team_number)
         if len(objects) >= 1:
             self._players_on_field[team_number - 1] = True
@@ -256,7 +256,7 @@ class Game:
         source: https://www.computervision.zone/courses/learn-opencv-in-3-hours/
         """
         # outline the contours on the mask
-        contours, hierarchy = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         objects = []
         # looping over every contour which was found
         for cnt in contours:
@@ -278,6 +278,7 @@ class Game:
                         objects[:, 1] > self.match_field[1][1]))), axis=0)
 
         if team_number == 1 or team_number == 2:
+            self._max_bounding_boxes = []
             objects = self.__remove_overlapping_bounding_boxes(objects, team_number)
 
         return objects
@@ -289,18 +290,20 @@ class Game:
         :return: The smoothed mask
         """
         # create the disk-shaped kernel for the following image processing,
-        r = 3
-        kernel = np.ones((2 * r, 2 * r), np.uint8)
-        for x in range(0, 2 * r):
-            for y in range(0, 2 * r):
-                if (x - r + 0.5) ** 2 + (y - r + 0.5) ** 2 > r ** 2:
+        kernel = np.ones((2 * self.KERNEL, 2 * self.KERNEL), np.uint8)
+        for x in range(0, 2 * self.KERNEL):
+            for y in range(0, 2 * self.KERNEL):
+                if (x - self.KERNEL + 0.5) ** 2 + (y - self.KERNEL + 0.5) ** 2 > self.KERNEL ** 2:
                     kernel[x, y] = 0
+        mask = self.__create_morphology_mask(kernel, mask)
 
+        return mask
+
+    def __create_morphology_mask(self, kernel, mask):
         # remove noise
         # see http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-
         return mask
 
     def __load_players_names(self, objects, team_number):
@@ -332,7 +335,6 @@ class Game:
         check if a player was detected with more than one bounding box. If so combine these boxes to one big box
         so every player is only detected once
         """
-        _max_bounding_boxes = []
         for contour in objects:
             y_mid = contour[1] + contour[3] / 2
 
@@ -341,36 +343,36 @@ class Game:
             right_corner_x = (contour[0] + contour[2])
             right_corner_y = y_mid + self.HALF_PLAYERS_WIDTH
             max_box = [[left_corner_x, left_corner_y], [right_corner_x, right_corner_y]]
-            _max_bounding_boxes.append(max_box)
+            self._max_bounding_boxes.append(max_box)
 
-        np.zeros((len(_max_bounding_boxes), len(_max_bounding_boxes)))
+        np.zeros((len(self._max_bounding_boxes), len(self._max_bounding_boxes)))
 
         i = 0
 
-        while i < len(_max_bounding_boxes):
-            for j, max_box2 in enumerate(_max_bounding_boxes[i + 1:]):
-                if (self.__get_rod((_max_bounding_boxes[i][0][0] + (
-                        abs(_max_bounding_boxes[i][0][0] -_max_bounding_boxes[i][1][0]) / 2))) == self.__get_rod(
+        while i < len(self._max_bounding_boxes):
+            for j, max_box2 in enumerate(self._max_bounding_boxes[i + 1:]):
+                if (self.__get_rod((self._max_bounding_boxes[i][0][0] + (
+                        abs(self._max_bounding_boxes[i][0][0] -self._max_bounding_boxes[i][1][0]) / 2))) == self.__get_rod(
                         (max_box2[0][0] + (abs(max_box2[0][0] - max_box2[1][0]) / 2))) and (
-                        (max_box2[0][1] <= _max_bounding_boxes[i][0][1] <= max_box2[1][1]) or (
-                        max_box2[0][1] <= _max_bounding_boxes[i][1][1] <= max_box2[1][1]))):
-                    _max_bounding_boxes[i] = [
-                        [min(_max_bounding_boxes[i][0][0], max_box2[0][0]),
-                         int(min(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
+                        (max_box2[0][1] <= self._max_bounding_boxes[i][0][1] <= max_box2[1][1]) or (
+                        max_box2[0][1] <= self._max_bounding_boxes[i][1][1] <= max_box2[1][1]))):
+                    self._max_bounding_boxes[i] = [
+                        [min(self._max_bounding_boxes[i][0][0], max_box2[0][0]),
+                         int(min(self._max_bounding_boxes[i][0][1], max_box2[0][1], self._max_bounding_boxes[i][1][1],
                                  max_box2[1][1]))],
-                        [max(_max_bounding_boxes[i][1][0], max_box2[1][0]),
-                         int(max(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
+                        [max(self._max_bounding_boxes[i][1][0], max_box2[1][0]),
+                         int(max(self._max_bounding_boxes[i][0][1], max_box2[0][1], self._max_bounding_boxes[i][1][1],
                                  max_box2[1][1]))]]
-                    _max_bounding_boxes.pop(i + 1 + j)
+                    self._max_bounding_boxes.pop(i + 1 + j)
                     i = i - 1
                     break
             i = i + 1
 
         if team_number == 1:
-            _max_bounding_boxes_team_1 = _max_bounding_boxes
+            _max_bounding_boxes_team_1 = self._max_bounding_boxes
             return _max_bounding_boxes_team_1
         if team_number == 2:
-            _max_bounding_boxes_team_2 = _max_bounding_boxes
+            _max_bounding_boxes_team_2 = self._max_bounding_boxes
             return _max_bounding_boxes_team_2
 
     def __reverse_ranks(self, ranks):

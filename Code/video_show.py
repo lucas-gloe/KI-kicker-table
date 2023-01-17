@@ -29,14 +29,15 @@ class VideoShower:
         show the grabbed frame to the screen
         """
         while not self.stopped:
-            cv2.imshow("Video", self.frames_to_show[0])
-            cv2.imshow("ball", self.balls_to_show[0])
-            if len(self.frames_to_show) > 1:
+            if len(self.frames_to_show) >=0:
+                cv2.imshow("Video", self.frames_to_show[0])
+                cv2.imshow("ball", self.balls_to_show[0])
                 self.frames_to_show.pop(0)
                 self.balls_to_show.pop(0)
 
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True
+            # TODO: Flag für videoactivation einfügen
             cv2.waitKey(0)
 
     def stop(self):
