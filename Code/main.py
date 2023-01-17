@@ -1,4 +1,4 @@
-from game import Game
+from Game import Game
 from video_get import VideoGetter
 from video_get_from_pic import VideoGetterFromPic
 from video_get_from_vid import VideoGetterFromVid
