@@ -1,0 +1,10 @@
+filterpy==1.4.5
+keyboard==0.13.5
+numpy==1.23.3
+opencv-python~=4.6.0.66
+PySimpleGUI~=4.60.4
+tqdm~=4.64.1
+matplotlib~=3.6.2
+seaborn~=0.12.1
+mplsoccer~=1.1.9
+numba~=0.56.4
