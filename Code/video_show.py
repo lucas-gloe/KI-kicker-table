@@ -1,5 +1,6 @@
 import cv2
 from threading import Thread
+from configs import get_frame_by_frame
 
 
 class VideoShower:
@@ -38,7 +39,8 @@ class VideoShower:
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True
             # TODO: Flag für videoactivation einfügen
-            cv2.waitKey(0)
+            if get_frame_by_frame():
+                cv2.waitKey(0)
 
     def stop(self):
         """

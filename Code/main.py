@@ -14,6 +14,8 @@ from tqdm import tqdm
 import os.path
 import keyboard
 import cv2
+from configs import video_stream, video_vid, video_pic
+
 
 
 def main():
@@ -29,9 +31,12 @@ def main():
 
     SCALE_PERCENT = 40  # percent of original size
 
-    #video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
-    #video_getter = VideoGetterFromPic(SCALE_PERCENT, VideoGetterFromPic.PICTURE).start()
-    video_getter = VideoGetterFromVid(SCALE_PERCENT, VideoGetterFromVid.VID).start()
+    if video_stream:
+        video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
+    if video_pic:
+        video_getter = VideoGetterFromPic(SCALE_PERCENT, VideoGetterFromPic.PICTURE).start()
+    if video_vid:
+        video_getter = VideoGetterFromVid(SCALE_PERCENT, VideoGetterFromVid.VID).start()
 
     video_shower = VideoShower(video_getter.get_frame(), video_getter.get_frame()).start()
     game = Game(SCALE_PERCENT).start()
@@ -106,7 +111,6 @@ def main():
 
         print(len(video_getter.frames_to_process), "getter")
         print(len(video_shower.frames_to_show), "shower")
-
 
 if __name__ == "__main__":
     main()
