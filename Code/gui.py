@@ -45,7 +45,6 @@ class GUI:
             [sg.Text("Team 1", font=(self._FONT, 20)), sg.Text("Team 2", font=(self._FONT, 20))],
             [sg.Text("")],
             [sg.Text('Ball Speed:', font=(self._FONT, 10)), sg.Text("NOT SET YET", key='-ball_speed-', font=(self._FONT, 10))],
-            [sg.Text('FPS:', font=(self._FONT, 10), text_color='grey'), sg.Text("", key='-counts_per_second-', font=(self._FONT, 10), text_color='grey')],
             [sg.Text('Press S to save configuration image',key='-config_img-', font=(self._FONT, 10))]
         ]
 
@@ -181,7 +180,6 @@ class GUI:
 
         if os.path.exists("../Bilder/calibration_image.JPG"):
             self.window["-config_img-"].update("configuration image saved!")
-            self.window["-counts_per_second-"].update(round(self.game.check_game_var("-counts_per_second-"), 0))
         if event == "-manual_game_counter_team_1_up-":
             self.game.check_game_var("-manual_game_counter_team_1_up-")
             self.window["-score_team_1-"].update(self.game.check_game_var("-score_team_1-"))

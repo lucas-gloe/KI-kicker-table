@@ -84,12 +84,12 @@ class Game:
         self._start_time = datetime.now()
         return self
 
-    def __counts_per_sec(self):
-        """
-        calculate average FPS output while videotracking
-        """
-        elapsed_time = (datetime.now() - self._start_time).total_seconds()
-        return self._num_occurrences / elapsed_time if elapsed_time > 0 else 0
+    # def __counts_per_sec(self):
+    #     """
+    #     calculate average FPS output while videotracking
+    #     """
+    #     elapsed_time = (datetime.now() - self._start_time).total_seconds()
+    #     return self._num_occurrences / elapsed_time if elapsed_time > 0 else 0
 
     ################################ INTERPRETATION OF THE FRAME ###############################
 
@@ -600,12 +600,12 @@ class Game:
             return self.tracked_team2_color_for_GUI
         elif '-ball-' == _type:
             return self.tracked_ball_color_for_GUI
-        elif "-counts_per_second-" == _type:
-            return self.__counts_per_sec()
         elif '-score_team_1-' == _type:
             return self.counter_team1
         elif '-score_team_2-' == _type:
             return self.counter_team2
+        # elif '-counts_per_second-' == _type:
+        #     return self.__counts_per_second
         # elif '-ball_speed-' == _type:
         #     return max(self.last_speed)
         elif "-last_game_team1-" == _type:
