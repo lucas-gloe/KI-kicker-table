@@ -38,7 +38,6 @@ class VideoShower:
 
             if cv2.waitKey(1) == ord("q"):
                 self.stopped = True
-            # TODO: Flag für videoactivation einfügen
             if get_frame_by_frame():
                 cv2.waitKey(0)
 

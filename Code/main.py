@@ -23,7 +23,6 @@ def main():
     Main thread serves only to pass frames between VideoGet, game and
     VideoShow objects/threads.
     # TODO: Kommentare der Funktionen erweitern
-    # TODO: Multithreading oder multiprocessing -> wo unterschied?
     """
     first_frame = True
     start_gui = True
