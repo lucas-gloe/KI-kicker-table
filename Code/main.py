@@ -48,16 +48,16 @@ def preprocessing_action(frame, game_config, dim):
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
     print("one frame iteration hsv_color ", (time.time() - start_time_running))
     start_time_running = time.time()
-    ball_position = new_frame_preprocessing.define_balls_position(hsv_img, game_config)
+    ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config)
     print("one frame iteration ball_position ", (time.time() - start_time_running))
     start_time_running = time.time()
-    team_1_positions, team1_on_field, ranks_team1 = new_frame_preprocessing.define_players_position(hsv_img,
+    team_1_positions, team1_on_field, ranks_team1 = frame_preprocessing.define_players_position(hsv_img,
                                                                                                     game_config,
                                                                                                     "team1_color", 1)
     print("one frame iteration team_1_positions ", (time.time() - start_time_running))
     start_time_running = time.time()
 
-    team_2_positions, team2_on_field, ranks_team2 = new_frame_preprocessing.define_players_position(hsv_img,
+    team_2_positions, team2_on_field, ranks_team2 = frame_preprocessing.define_players_position(hsv_img,
                                                                                                     game_config,
                                                                                                     "team2_color", 2)
     print("one frame iteration team_2_positions ", (time.time() - start_time_running))

@@ -1,32 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4dbf7daf-e346-4c54-80bd-cd898b8c41b6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Code/new_calibration.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Code/new_frame_postprocessing.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Code/new_frame_preprocessing.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Code/new_frame_rendering.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Code/new_gui.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Code/new_main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Bilder/GUI/calibration_image.JPG" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/Game.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/analysis.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/calibration_image.JPG" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/configs.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/configs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/cropped_calibration_img.JPG" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/detect_color.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/detect_field.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/gray.JPG" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/gui.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/kalman_filter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/main.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/multithread.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/video_get.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/video_get_from_pic.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/video_get_from_vid.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Code/video_show.py" beforeDir="false" />
-    </list>
+    <list default="true" id="4dbf7daf-e346-4c54-80bd-cd898b8c41b6" name="Changes" comment="" />
     <list id="d484ad53-86ec-486e-a7ea-6361ae090574" name="Changes by Mattis" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -159,7 +134,7 @@
       <workItem from="1674332199679" duration="3824000" />
       <workItem from="1674459891391" duration="1843000" />
       <workItem from="1674463345901" duration="9247000" />
-      <workItem from="1674478865851" duration="6856000" />
+      <workItem from="1674478865851" duration="7154000" />
     </task>
     <servers />
   </component>

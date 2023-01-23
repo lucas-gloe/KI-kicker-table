@@ -13,7 +13,7 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
         frame, current_result, expect_id = result_queue.get()
         # print(current_result)
         check_variables(user_input, game_flags)
-        new_frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
+        frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
 
         out_frame = render_game(frame, current_result, game_config, total_game_results, game_flags)
 
@@ -39,17 +39,17 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
 def render_game(frame, results, game_configs, game_results, game_flags):
     if results == None:
         print("drawing calibration marker")
-        return new_frame_rendering.draw_calibration_marker(frame)
+        return frame_rendering.draw_calibration_marker(frame)
     else:
         # print(game_results)
-        frame = new_frame_rendering._draw_fps(frame, results)
+        frame = frame_rendering._draw_fps(frame, results)
         if game_flags['show_kicker']:
-            frame = new_frame_rendering._draw_field_calibrations(frame, game_configs)
+            frame = frame_rendering._draw_field_calibrations(frame, game_configs)
         if game_flags['show_objects']:
-            frame = new_frame_rendering._draw_ball(frame, results)
-            frame = new_frame_rendering._draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
+            frame = frame_rendering._draw_ball(frame, results)
+            frame = frame_rendering._draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
                                                       'ranks_team1')
-            frame = new_frame_rendering._draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
+            frame = frame_rendering._draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
                                                       'ranks_team2')
         return frame
 
