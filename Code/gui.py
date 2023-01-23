@@ -3,8 +3,8 @@ import keyboard
 import os.path
 
 import configs
-import new_frame_postprocessing
-import new_frame_rendering
+import frame_postprocessing
+import frame_rendering
 
 
 def gui_handle(window, result_queue, user_input, game_config, total_game_results, ball_positions, game_flags, current_game_results):

@@ -3,11 +3,11 @@ import multiprocessing
 import time
 import numpy as np
 import os.path
-from new_gui import gui_handle
-from new_calibration import calibrate, calibrate_before_first_image
+from gui import gui_handle
+from calibration import calibrate, calibrate_before_first_image
 import configs
-import new_frame_preprocessing
-import new_frame_postprocessing
+import frame_preprocessing
+import frame_postprocessing
 
 
 def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config):
