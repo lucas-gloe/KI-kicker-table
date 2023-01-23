@@ -85,6 +85,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             start_time -= 0.001
         frame_dict[frame_id] = (frame, preprocessing_result)
         while (expect_id in frame_dict):
+            start_time_2 = time.time()
             current_frame, current_preprocessing_result = frame_dict[expect_id]
             # print(current_preprocessing_result[0][0])
             fps = expect_id / (time.time() - start_time)
@@ -100,14 +101,16 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
 
             ball_positions.append(current_result['ball_position'])
             # print(ball_positions)
-            # new_frame_postprocessing._count_game_score(ball_positions, game_config, current_game_results, game_flags)
+            # frame_postprocessing._count_game_score(ball_positions, game_config, current_game_results, game_flags)
             #
-            # new_frame_postprocessing._detect_ball_reentering(ball_positions, game_config, game_flags)
+            # frame_postprocessing._detect_ball_reentering(ball_positions, game_config, game_flags)
 
             result_queue.put((current_frame, current_result, expect_id))
             # print(current_result)
             del frame_dict[expect_id]
             expect_id += 1
+
+            print("total time update game",time.time()- start_time_2)
 
 
 if __name__ == '__main__':
@@ -164,7 +167,7 @@ if __name__ == '__main__':
     # print(cap.get(cv2.CAP_PROP_FPS))
 
     # start 4 worker processes to process the frames
-    num_workers = 2
+    num_workers = 4
     for i in range(num_workers):
         preprocessing_worker = multiprocessing.Process(target=preprocess_frame,
                                                        args=(frame_queue, preprocessed_queue, user_input, game_config))
