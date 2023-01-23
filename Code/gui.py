@@ -5,10 +5,11 @@ import os.path
 import configs
 import frame_postprocessing
 import frame_rendering
-
+import time
 
 def gui_handle(window, result_queue, user_input, game_config, total_game_results, ball_positions, game_flags, current_game_results):
     while True:
+        start_time = time.time()
         new_game = False
         frame, current_result, expect_id = result_queue.get()
         # print(current_result)
@@ -34,6 +35,9 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
 
         if keyboard.is_pressed("s"):  # safe configuration image
             cv2.imwrite("./calibration_image.JPG", frame)
+
+        print("total time render gui", time.time()-start_time)
+        print("")
 
 
 def render_game(frame, results, game_configs, game_results, game_flags):

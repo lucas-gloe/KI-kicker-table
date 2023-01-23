@@ -22,45 +22,45 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config):
 
     while True:
         start_time_running1 = time.time()
-        start_time_running = time.time()
+        # start_time_running = time.time()
         frame_id, frame = frame_queue.get()
-        print("one frame iteration take from frame_queue ", (time.time() - start_time_running))
-        start_time_running = time.time()
+        # print("one frame iteration take from frame_queue ", (time.time() - start_time_running))
+        # start_time_running = time.time()
         preprocessing_result, resized_frame = preprocessing_action(frame, game_config, dim)
-        print("one frame iteration total preprocessing ", (time.time() - start_time_running))
-        start_time_running = time.time()
+        # print("one frame iteration total preprocessing ", (time.time() - start_time_running))
+        # start_time_running = time.time()
         preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
-        print("one frame iteration put into preprocessed_queue ", (time.time() - start_time_running))
+        # print("one frame iteration put into preprocessed_queue ", (time.time() - start_time_running))
         if user_input.value == ord('q'):
             print("Worker stopped")
             break
-        print("total time preprocessing FPS:",frame_id / (time.time() - start_time))
+        print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
         print("total time preprocessing per frame", (time.time() - start_time_running1))
         print("")
 
 
 def preprocessing_action(frame, game_config, dim):
-    start_time_running = time.time()
+    # start_time_running = time.time()
     analysis_results = []
     resized_frame = cv2.resize(frame, dim)
-    print("one frame iteration rezising ", (time.time() - start_time_running))
-    start_time_running = time.time()
+    # print("one frame iteration rezising ", (time.time() - start_time_running))
+    # start_time_running = time.time()
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
-    print("one frame iteration hsv_color ", (time.time() - start_time_running))
-    start_time_running = time.time()
+    # print("one frame iteration hsv_color ", (time.time() - start_time_running))
+    # start_time_running = time.time()
     ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config)
-    print("one frame iteration ball_position ", (time.time() - start_time_running))
-    start_time_running = time.time()
+    # print("one frame iteration ball_position ", (time.time() - start_time_running))
+    # start_time_running = time.time()
     team_1_positions, team1_on_field, ranks_team1 = frame_preprocessing.define_players_position(hsv_img,
-                                                                                                    game_config,
-                                                                                                    "team1_color", 1)
-    print("one frame iteration team_1_positions ", (time.time() - start_time_running))
-    start_time_running = time.time()
+                                                                                                game_config,
+                                                                                                "team1_color", 1)
+    # print("one frame iteration team_1_positions ", (time.time() - start_time_running))
+    # start_time_running = time.time()
 
     team_2_positions, team2_on_field, ranks_team2 = frame_preprocessing.define_players_position(hsv_img,
-                                                                                                    game_config,
-                                                                                                    "team2_color", 2)
-    print("one frame iteration team_2_positions ", (time.time() - start_time_running))
+                                                                                                game_config,
+                                                                                                "team2_color", 2)
+    # print("one frame iteration team_2_positions ", (time.time() - start_time_running))
     analysis_results.append(
         (ball_position, team_1_positions, team_2_positions, team1_on_field, team2_on_field, ranks_team1, ranks_team2))
     # print(analysis_results[0][0])
@@ -110,7 +110,8 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             del frame_dict[expect_id]
             expect_id += 1
 
-            print("total time update game",time.time()- start_time_2)
+            print("total time update game", time.time() - start_time_2)
+            print("")
 
 
 if __name__ == '__main__':
