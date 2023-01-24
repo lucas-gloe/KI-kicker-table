@@ -227,6 +227,7 @@ def define_balls_position(hsv_img, game_config, game_flags):
         # else:
         print("ball not found")
         _current_ball_position = [-1, -1]
+        game_flags['ball_was_found'] = False
 
     return _current_ball_position
 

@@ -51,7 +51,7 @@ def render_game(frame, results, game_configs, game_results, game_flags):
             frame = frame_rendering.draw_field_calibrations(frame, game_configs)
         if game_flags['show_objects']:
             frame = frame_rendering.draw_ball(frame, results)
-            frame = frame_rendering._draw_predicted_ball(frame, results, game_flags)
+            frame = frame_rendering.draw_predicted_ball(frame, results, game_flags)
             frame = frame_rendering.draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
                                                       'ranks_team1')
             frame = frame_rendering.draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,

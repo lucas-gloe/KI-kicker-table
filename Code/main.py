@@ -34,9 +34,9 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
         if user_input.value == ord('q'):
             print("Worker stopped")
             break
-        print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
-        print("total time preprocessing per frame", (time.time() - start_time_running1))
-        print("")
+        # print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
+        # print("total time preprocessing per frame", (time.time() - start_time_running1))
+        # print("")
 
 
 def preprocessing_action(frame, game_config, dim, game_flags):
@@ -73,6 +73,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
     start_time = None
     frame_dict = {}
     game = {}
+    predicted_ball_position = [-1,-1]
     expect_id = 0
     current_result = {}
     while True:
@@ -99,13 +100,20 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             current_result['ranks_team1'] = current_preprocessing_result[0][5]
             current_result['ranks_team2'] = current_preprocessing_result[0][6]
 
-            predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags)
-
-            if predicted_ball_position is not [-1, -1]:
-                ball_positions.append(predicted_ball_position)
-            else:
+            if current_result['ball_position'] != [-1,-1]:
+                predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags,
+                                                                            current_game_results)
                 ball_positions.append(current_result['ball_position'])
-            # print(ball_positions)
+            if current_result['ball_position'] == [-1,-1]:
+                if not game_flags["predicted_value_added"]:
+                    ball_positions.append(predicted_ball_position)
+                    current_result["predicted"] = predicted_ball_position
+                    game_flags["predicted_value_added"] = True
+                else:
+                    ball_positions.append(current_result['ball_position'])
+
+            print(ball_positions)
+
             frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
 
             frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
@@ -163,6 +171,7 @@ if __name__ == '__main__':
     current_game_results['counter_team1'] = 0
     current_game_results['counter_team2'] = 0
 
+
     print("initialize GUI")
     window = calibrate_before_first_image()
 
@@ -190,6 +199,7 @@ if __name__ == '__main__':
     gui_worker.start()
 
     frame_id = 0
+
     print("Start processing")
 
     calibrated = False

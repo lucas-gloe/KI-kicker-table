@@ -58,16 +58,13 @@ def reset_game(current_game_results, game_results, game_flags):
         game_flags['results'] = False
 
 
-def predict_ball(ball_positions, game_flags):
-    if not game_flags['predicted_value_added']:
+def predict_ball(ball_positions, game_flags, current_game_results):
         predicted = KalmanFilter().predict(ball_positions[-1][0], ball_positions[-1][1])
-        current_ball_position = (predicted[0], predicted[1])
+        current_game_results["predicted"] = (predicted[0], predicted[1])
+        current_ball_position = current_game_results["predicted"]
         print("ball position predicted")
-        game_flags['predicted_value_added'] = True
         return current_ball_position
-    else:
-        game_flags['ball_was_found'] = False
-        return [-1, -1]
+
 
 
 class KalmanFilter:

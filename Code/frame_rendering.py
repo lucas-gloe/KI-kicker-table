@@ -60,13 +60,13 @@ def draw_ball(frame, results):
     return frame
 
 
-def _draw_predicted_ball(frame, results, game_flags):
+def draw_predicted_ball(frame, results, game_flags):
     """
     Draw a circle at the predicted balls position if there is no ball
     detected in the frame and name the Object "ball"
     """
-    if game_flags["predicted_value_added"]:
-        cv2.circle(frame, (results['ball_position'][0], results['ball_position'][1]), int(16 * configs.SCALE_FACTOR),
+    if results["ball_position"] == [-1, -1]:
+        cv2.circle(frame, (results["predicted"][0], results["predicted"][1]), int(16 * configs.SCALE_FACTOR),
                    (0, 255, 255), 2)
 
     return frame
