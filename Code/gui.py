@@ -41,8 +41,7 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
 
 
 def render_game(frame, results, game_configs, game_results, game_flags):
-    if results == None:
-        print("drawing calibration marker")
+    if results is None:
         return frame_rendering.draw_calibration_marker(frame)
     else:
         # print(game_results)

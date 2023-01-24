@@ -160,7 +160,7 @@ if __name__ == '__main__':
     game_flags['show_objects'] = True
     game_flags['show_kicker'] = False
     game_flags['new_game'] = False
-    game_flags['_ball_reenters_game'] = False
+    # game_flags['_ball_reenters_game'] = True
     game_flags['_goal1_detected'] = False
     game_flags['_goal2_detected'] = False
     game_flags['predicted_value_added'] = False
