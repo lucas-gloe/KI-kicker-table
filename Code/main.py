@@ -21,7 +21,7 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
         start_time -= 0.001
 
     while True:
-        # start_time_running1 = time.time()
+        start_time_running1 = time.time()
         # start_time_running = time.time()
         frame_id, frame = frame_queue.get()
         # print("one frame iteration take from frame_queue ", (time.time() - start_time_running))
@@ -34,9 +34,9 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
         if user_input.value == ord('q'):
             print("Worker stopped")
             break
-        # print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
-        # print("total time preprocessing per frame", (time.time() - start_time_running1))
-        # print("")
+        print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
+        print("total time preprocessing per frame", (time.time() - start_time_running1))
+        print("")
 
 
 def preprocessing_action(frame, game_config, dim, game_flags):
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     # print(cap.get(cv2.CAP_PROP_FPS))
 
     # start 4 worker processes to process the frames
-    num_workers = 4
+    num_workers = 2
     for i in range(num_workers):
         preprocessing_worker = multiprocessing.Process(target=preprocess_frame,
                                                        args=(frame_queue, preprocessed_queue, user_input, game_config, game_flags))
