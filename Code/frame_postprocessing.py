@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def _count_game_score(ball_positions, game_config, current_game_results, game_flags):
+def count_game_score(ball_positions, game_config, current_game_results, game_flags):
     """
     Count game score +1  of a certain team if a goal was shot
     """
@@ -33,7 +33,7 @@ def _count_game_score(ball_positions, game_config, current_game_results, game_fl
     print(game_flags['goalInCurrentFrame'])
 
 
-def _detect_ball_reentering(ball_positions, game_config, game_flags):
+def detect_ball_reentering(ball_positions, game_config, game_flags):
     """
     Detect if the ball reenters the field in the middle section of the Kicker after a goal was shot
     """
@@ -56,6 +56,18 @@ def reset_game(current_game_results, game_results, game_flags):
         current_game_results['counter_team1'] = 0
         current_game_results['counter_team2'] = 0
         game_flags['results'] = False
+
+
+def predict_ball(ball_positions, game_flags):
+    if not game_flags['predicted_value_added']:
+        predicted = KalmanFilter().predict(ball_positions[-1][0], ball_positions[-1][1])
+        current_ball_position = (predicted[0], predicted[1])
+        print("ball position predicted")
+        game_flags['predicted_value_added'] = True
+        return current_ball_position
+    else:
+        game_flags['ball_was_found'] = False
+        return [-1, -1]
 
 
 class KalmanFilter:

@@ -10,7 +10,7 @@ import frame_preprocessing
 import frame_postprocessing
 
 
-def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config):
+def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
     # resizing frame for speed optimisation
     width = int(1920 * configs.SCALE_FACTOR)
     height = int(1080 * configs.SCALE_FACTOR)
@@ -21,12 +21,12 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config):
         start_time -= 0.001
 
     while True:
-        start_time_running1 = time.time()
+        # start_time_running1 = time.time()
         # start_time_running = time.time()
         frame_id, frame = frame_queue.get()
         # print("one frame iteration take from frame_queue ", (time.time() - start_time_running))
         # start_time_running = time.time()
-        preprocessing_result, resized_frame = preprocessing_action(frame, game_config, dim)
+        preprocessing_result, resized_frame = preprocessing_action(frame, game_config, dim, game_flags)
         # print("one frame iteration total preprocessing ", (time.time() - start_time_running))
         # start_time_running = time.time()
         preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
@@ -34,12 +34,12 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config):
         if user_input.value == ord('q'):
             print("Worker stopped")
             break
-        print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
-        print("total time preprocessing per frame", (time.time() - start_time_running1))
-        print("")
+        # print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
+        # print("total time preprocessing per frame", (time.time() - start_time_running1))
+        # print("")
 
 
-def preprocessing_action(frame, game_config, dim):
+def preprocessing_action(frame, game_config, dim, game_flags):
     # start_time_running = time.time()
     analysis_results = []
     resized_frame = cv2.resize(frame, dim)
@@ -48,7 +48,7 @@ def preprocessing_action(frame, game_config, dim):
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
     # print("one frame iteration hsv_color ", (time.time() - start_time_running))
     # start_time_running = time.time()
-    ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config)
+    ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config, game_flags)
     # print("one frame iteration ball_position ", (time.time() - start_time_running))
     # start_time_running = time.time()
     team_1_positions, team1_on_field, ranks_team1 = frame_preprocessing.define_players_position(hsv_img,
@@ -85,7 +85,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             start_time -= 0.001
         frame_dict[frame_id] = (frame, preprocessing_result)
         while (expect_id in frame_dict):
-            start_time_2 = time.time()
+            # start_time_2 = time.time()
             current_frame, current_preprocessing_result = frame_dict[expect_id]
             # print(current_preprocessing_result[0][0])
             fps = expect_id / (time.time() - start_time)
@@ -99,19 +99,26 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             current_result['ranks_team1'] = current_preprocessing_result[0][5]
             current_result['ranks_team2'] = current_preprocessing_result[0][6]
 
-            ball_positions.append(current_result['ball_position'])
+            predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags)
+
+            if predicted_ball_position is not [-1, -1]:
+                ball_positions.append(predicted_ball_position)
+            else:
+                ball_positions.append(current_result['ball_position'])
             # print(ball_positions)
-            # frame_postprocessing._count_game_score(ball_positions, game_config, current_game_results, game_flags)
-            #
-            # frame_postprocessing._detect_ball_reentering(ball_positions, game_config, game_flags)
+            frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
+
+            frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
+
+            # ball_positions.append(current_result['ball_position'])
 
             result_queue.put((current_frame, current_result, expect_id))
             # print(current_result)
             del frame_dict[expect_id]
             expect_id += 1
 
-            print("total time update game", time.time() - start_time_2)
-            print("")
+            # print("total time update game", time.time() - start_time_2)
+            # print("")
 
 
 if __name__ == '__main__':
@@ -171,7 +178,7 @@ if __name__ == '__main__':
     num_workers = 4
     for i in range(num_workers):
         preprocessing_worker = multiprocessing.Process(target=preprocess_frame,
-                                                       args=(frame_queue, preprocessed_queue, user_input, game_config))
+                                                       args=(frame_queue, preprocessed_queue, user_input, game_config, game_flags))
         preprocessing_worker.start()
     postprocessing_worker = multiprocessing.Process(target=update_game,
                                                     args=(preprocessed_queue, result_queue, user_input, game_config,

@@ -157,7 +157,7 @@ def __reverse_ranks(ranks):
     return reversed_ranks
 
 
-def define_balls_position(hsv_img, game_config):
+def define_balls_position(hsv_img, game_config, game_flags):
     _predicted = (0, 0)
     center_x = 0
     center_y = 0
@@ -190,8 +190,7 @@ def define_balls_position(hsv_img, game_config):
     objects.flatten()
 
     if len(objects) == 1:
-
-        # game_flags['predicted_value_added'] = False
+        game_flags['predicted_value_added'] = False
 
         x = objects[0][0]
         y = objects[0][1]
@@ -209,9 +208,7 @@ def define_balls_position(hsv_img, game_config):
         # self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y,
         #                                                                  self._team1_figures, self._team2_figures,
         #                                                                  self.players_rods)
-        # game_flags['ball_was_found'] = True
-
-        # _predicted = KalmanFilter().predict(center_x, center_y)
+        game_flags['ball_was_found'] = True
 
     elif len(objects) == 0:
         # if not game_flags['predicted_value_added']:
@@ -222,7 +219,7 @@ def define_balls_position(hsv_img, game_config):
         # else:
         print("ball not found")
         _current_ball_position = [-1, -1]
-        # game_flags['ball_was_found'] = False
+        game_flags['ball_was_found'] = False
     else:
         #     #self.__calculate_balls_position(objects)
         # if center_x != 0 & center_y != 0:

@@ -2,14 +2,14 @@ import cv2
 import configs
 
 
-def _draw_fps(frame, results):
+def draw_fps(frame, results):
     cv2.putText(frame, str(results["fps"]), (int(frame.shape[0] / 2), int(frame.shape[1] / 2)),
                 cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
 
     return frame
 
 
-def _draw_field_calibrations(frame, game_configs):
+def draw_field_calibrations(frame, game_configs):
     """
     show football field contour for calibration on frame if a certain button was pressed
     """
@@ -46,7 +46,7 @@ def _draw_field_calibrations(frame, game_configs):
     return frame
 
 
-def _draw_ball(frame, results):
+def draw_ball(frame, results):
     """
     Draw a circle at the balls position and name the Object "ball"
     """
@@ -60,19 +60,19 @@ def _draw_ball(frame, results):
     return frame
 
 
-def _draw_predicted_ball(frame, results):
+def _draw_predicted_ball(frame, results, game_flags):
     """
     Draw a circle at the predicted balls position if there is no ball
     detected in the frame and name the Object "ball"
     """
-    if results['ball_position'] == [-1, -1]:
+    if game_flags["predicted_value_added"]:
         cv2.circle(frame, (results['ball_position'][0], results['ball_position'][1]), int(16 * configs.SCALE_FACTOR),
                    (0, 255, 255), 2)
 
     return frame
 
 
-def _draw_figures(frame, results, team_dict_number, team_dict_flag, team_number, team_ranks):
+def draw_figures(frame, results, team_dict_number, team_dict_flag, team_number, team_ranks):
     """
     Draw a rectangle at the players position and name it TeamX
     """

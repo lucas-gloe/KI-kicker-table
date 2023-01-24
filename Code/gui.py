@@ -36,8 +36,8 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
         if keyboard.is_pressed("s"):  # safe configuration image
             cv2.imwrite("./calibration_image.JPG", frame)
 
-        print("total time render gui", time.time()-start_time)
-        print("")
+        # print("total time render gui", time.time()-start_time)
+        # print("")
 
 
 def render_game(frame, results, game_configs, game_results, game_flags):
@@ -46,14 +46,15 @@ def render_game(frame, results, game_configs, game_results, game_flags):
         return frame_rendering.draw_calibration_marker(frame)
     else:
         # print(game_results)
-        frame = frame_rendering._draw_fps(frame, results)
+        frame = frame_rendering.draw_fps(frame, results)
         if game_flags['show_kicker']:
-            frame = frame_rendering._draw_field_calibrations(frame, game_configs)
+            frame = frame_rendering.draw_field_calibrations(frame, game_configs)
         if game_flags['show_objects']:
-            frame = frame_rendering._draw_ball(frame, results)
-            frame = frame_rendering._draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
+            frame = frame_rendering.draw_ball(frame, results)
+            frame = frame_rendering._draw_predicted_ball(frame, results, game_flags)
+            frame = frame_rendering.draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
                                                       'ranks_team1')
-            frame = frame_rendering._draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
+            frame = frame_rendering.draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
                                                       'ranks_team2')
         return frame
 

@@ -1,4 +1,4 @@
-source = 1
+source = 0
 # source = r"C:\Users\gloec\OneDrive\Dokumente\GitHub\KI-kicker-table\OpenCV\Video\1080p\240fps\test_schuss_lang.mov"
 
 SCALE_FACTOR = 0.4
