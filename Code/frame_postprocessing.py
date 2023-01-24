@@ -8,19 +8,20 @@ def count_game_score(ball_positions, game_config, current_game_results, game_fla
     """
     if len(ball_positions) > 1 and 0 < ball_positions[-2][0] < game_config['goal2'][1][0] and game_config['goal2'][0][
         1] < \
-            ball_positions[-2][1] < game_config['goal2'][1][1] and ball_positions[-1] == [-1, -1]:
-        game_flags['_goal1_detected'] = True
-        game_flags['goalInCurrentFrame'] = True
-
-    if len(ball_positions) > 1 and ball_positions[-2][0] > game_config['goal1'][0][0] and game_config['goal1'][0][1] < \
-            ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1]:
+            ball_positions[-2][1] < game_config['goal2'][1][1] and ball_positions[-1] == [-1, -1] and game_flags['_ball_reenters_game']:
         game_flags['_goal2_detected'] = True
         game_flags['goalInCurrentFrame'] = True
 
-    if game_flags['_goal1_detected'] and game_flags['goalInCurrentFrame']:
+    if len(ball_positions) > 1 and ball_positions[-2][0] > game_config['goal1'][0][0] and game_config['goal1'][0][1] < \
+            ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1] and game_flags['_ball_reenters_game']:
+        game_flags['_goal1_detected'] = True
+        game_flags['goalInCurrentFrame'] = True
+
+    if game_flags['_goal2_detected'] and game_flags['goalInCurrentFrame']:
         current_game_results['counter_team1'] += 1
         game_flags['goalInCurrentFrame'] = False
-    if game_flags['_goal2_detected'] and game_flags['goalInCurrentFrame']:
+
+    if game_flags['_goal1_detected'] and game_flags['goalInCurrentFrame']:
         current_game_results['counter_team2'] += 1
         game_flags['goalInCurrentFrame'] = False
 
@@ -28,6 +29,7 @@ def count_game_score(ball_positions, game_config, current_game_results, game_fla
     print(ball_positions[-2][0] > game_config['goal1'][0][0])
     print(game_config['goal1'][0][1] < ball_positions[-2][1] < game_config['goal1'][1][1])
     print(ball_positions[-1] == [-1, -1])
+    print(game_flags['_ball_reenters_game'])
 
 
 def detect_ball_reentering(ball_positions, game_config, game_flags):
@@ -35,20 +37,21 @@ def detect_ball_reentering(ball_positions, game_config, game_flags):
     Detect if the ball reenters the field in the middle section of the Kicker after a goal was shot
     """
     if game_flags['_goal1_detected'] or game_flags['_goal2_detected']:
-        if len(ball_positions) > 1:
+        if len(ball_positions) >= 2:
             if game_config['throw_in_zone'][0][0] < ball_positions[-1][0] < game_config['throw_in_zone'][1][0] and \
                     ball_positions[-2] == [-1, -1]:
                 game_flags['_goal1_detected'] = False
                 game_flags['_goal2_detected'] = False
+                game_flags['_ball_reenters_game'] = True
                 game_flags['results'] = True
 
 
-def reset_game(current_game_results, game_results, game_flags):
+def reset_game(current_game_results, total_game_results, game_flags):
     """
     Reset current game results to 0:0
     """
     if game_flags["new_game"] and game_flags['results']:
-        game_results.append([current_game_results['counter_team1'], current_game_results['counter_team1']])
+        total_game_results.append([current_game_results['counter_team1'], current_game_results['counter_team1']])
         current_game_results['counter_team1'] = 0
         current_game_results['counter_team2'] = 0
         game_flags['results'] = False

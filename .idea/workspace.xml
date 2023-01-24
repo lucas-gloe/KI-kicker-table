@@ -6,6 +6,7 @@
       <change beforePath="$PROJECT_DIR$/Code/calibration_image.JPG" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/cropped_calibration_img.JPG" beforeDir="false" afterPath="$PROJECT_DIR$/Code/cropped_calibration_img.JPG" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/frame_postprocessing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/frame_postprocessing.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Code/frame_rendering.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/frame_rendering.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/gray.JPG" beforeDir="false" afterPath="$PROJECT_DIR$/Code/gray.JPG" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/gui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/main.py" afterDir="false" />
@@ -143,7 +144,7 @@
       <workItem from="1674459891391" duration="1843000" />
       <workItem from="1674463345901" duration="9247000" />
       <workItem from="1674478865851" duration="10447000" />
-      <workItem from="1674550915830" duration="10466000" />
+      <workItem from="1674550915830" duration="12932000" />
     </task>
     <servers />
   </component>
@@ -165,7 +166,7 @@
     <SUITE FILE_PATH="coverage/main_py$gui2.coverage" NAME="gui2 Coverage Results" MODIFIED="1674157035547" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
     <SUITE FILE_PATH="coverage/main_py$frame_preprocessing.coverage" NAME="frame_preprocessing Coverage Results" MODIFIED="1674061859379" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
     <SUITE FILE_PATH="coverage/main_py$test_multiproccess.coverage" NAME="test_multiproccess Coverage Results" MODIFIED="1674157598851" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
-    <SUITE FILE_PATH="coverage/main_py$new_main.coverage" NAME="new_main Coverage Results" MODIFIED="1674570149972" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
+    <SUITE FILE_PATH="coverage/main_py$new_main.coverage" NAME="new_main Coverage Results" MODIFIED="1674572856397" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
     <SUITE FILE_PATH="coverage/main_py$main.coverage" NAME="main Coverage Results" MODIFIED="1674142153833" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Code" />
   </component>
 </project>

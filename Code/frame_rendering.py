@@ -25,10 +25,10 @@ def draw_field_calibrations(frame, game_configs):
     cv2.line(frame, (int(game_configs['field'][1][0]), int(game_configs['field'][1][1])),
              (int(game_configs['field'][2][0]), int(game_configs['field'][2][1])),
              (0, 255, 0), 2)
-    cv2.rectangle(frame, (int(game_configs['goal1'][0][0]), int(game_configs['goal1'][0][1])),  # Team1, orange
+    cv2.rectangle(frame, (int(game_configs['goal1'][0][0]), int(game_configs['goal1'][0][1])),  # tor von Team1, orange
                   (int(game_configs['goal1'][1][0]), int(game_configs['goal1'][1][1])),
                   (0, 255, 0), 2)
-    cv2.rectangle(frame, (int(game_configs['goal2'][0][0]), int(game_configs['goal2'][0][1])),  # Team2, blau
+    cv2.rectangle(frame, (int(game_configs['goal2'][0][0]), int(game_configs['goal2'][0][1])),  # tor von Team2, blau
                   (int(game_configs['goal2'][1][0]), int(game_configs['goal2'][1][1])),
                   (0, 255, 0), 2)
     cv2.rectangle(frame, (int(game_configs['throw_in_zone'][0][0]), int(game_configs['throw_in_zone'][0][1])),

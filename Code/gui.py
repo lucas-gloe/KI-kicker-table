@@ -34,7 +34,8 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
             break
 
         if keyboard.is_pressed("s"):  # safe configuration image
-            cv2.imwrite("./calibration_image.JPG", frame)
+            if not os.path.exists(r"./calibration_image.JPG"):
+                cv2.imwrite("./calibration_image.JPG", frame)
 
         # print("total time render gui", time.time()-start_time)
         # print("")
@@ -77,9 +78,8 @@ def check_variables(user_input, game_flags):
             game_flags['show_objects'] = False
     if keyboard.is_pressed("n"):  # new game
         user_input.value = ord('n')
-        if user_input.value == ord('d'):
+        if user_input.value == ord('n'):
             game_flags['new_game'] = True
-            game_flags["results"] = True
 
 
 def update_gui(window, game_config, event, total_game_results, current_game_results):
