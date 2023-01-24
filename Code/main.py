@@ -73,7 +73,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
     start_time = None
     frame_dict = {}
     game = {}
-    predicted_ball_position = [-1,-1]
+    predicted_ball_position = [-1, -1]
     expect_id = 0
     current_result = {}
     while True:
@@ -100,11 +100,12 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
             current_result['ranks_team1'] = current_preprocessing_result[0][5]
             current_result['ranks_team2'] = current_preprocessing_result[0][6]
 
-            if current_result['ball_position'] != [-1,-1]:
+            if current_result['ball_position'] != [-1, -1]:
                 predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags,
                                                                             current_game_results)
                 ball_positions.append(current_result['ball_position'])
-            if current_result['ball_position'] == [-1,-1]:
+                game_flags["predicted_value_added"] = False
+            if current_result['ball_position'] == [-1, -1]:
                 if not game_flags["predicted_value_added"]:
                     ball_positions.append(predicted_ball_position)
                     current_result["predicted"] = predicted_ball_position
@@ -171,7 +172,6 @@ if __name__ == '__main__':
     current_game_results['counter_team1'] = 0
     current_game_results['counter_team2'] = 0
 
-
     print("initialize GUI")
     window = calibrate_before_first_image()
 
@@ -187,7 +187,8 @@ if __name__ == '__main__':
     num_workers = 2
     for i in range(num_workers):
         preprocessing_worker = multiprocessing.Process(target=preprocess_frame,
-                                                       args=(frame_queue, preprocessed_queue, user_input, game_config, game_flags))
+                                                       args=(frame_queue, preprocessed_queue, user_input, game_config,
+                                                             game_flags))
         preprocessing_worker.start()
     postprocessing_worker = multiprocessing.Process(target=update_game,
                                                     args=(preprocessed_queue, result_queue, user_input, game_config,
