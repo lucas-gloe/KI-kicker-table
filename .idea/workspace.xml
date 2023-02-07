@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
+<<<<<<< Updated upstream
     <list default="true" id="4dbf7daf-e346-4c54-80bd-cd898b8c41b6" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/calibration_image.JPG" beforeDir="false" />
@@ -11,6 +12,9 @@
       <change beforePath="$PROJECT_DIR$/Code/gui.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/gui.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Code/main.py" afterDir="false" />
     </list>
+=======
+    <list default="true" id="4dbf7daf-e346-4c54-80bd-cd898b8c41b6" name="Changes" comment="implementing shoot analytics in gui, changed matplotlib to cv2 for shooting path" />
+>>>>>>> Stashed changes
     <list id="d484ad53-86ec-486e-a7ea-6361ae090574" name="Changes by Mattis" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -144,8 +148,162 @@
       <workItem from="1674459891391" duration="1843000" />
       <workItem from="1674463345901" duration="9247000" />
       <workItem from="1674478865851" duration="10447000" />
+<<<<<<< Updated upstream
       <workItem from="1674550915830" duration="12932000" />
     </task>
+=======
+      <workItem from="1674550915830" duration="16968000" />
+      <workItem from="1674585358272" duration="3070000" />
+      <workItem from="1674588459190" duration="1220000" />
+      <workItem from="1674589700987" duration="1483000" />
+      <workItem from="1674591581212" duration="1755000" />
+      <workItem from="1674598073119" duration="1197000" />
+      <workItem from="1674633383545" duration="271000" />
+      <workItem from="1674635615657" duration="991000" />
+      <workItem from="1674643392940" duration="3719000" />
+      <workItem from="1674676967419" duration="80000" />
+      <workItem from="1674725610588" duration="7506000" />
+      <workItem from="1674745654107" duration="2204000" />
+      <workItem from="1674810660955" duration="423000" />
+      <workItem from="1674812946493" duration="6735000" />
+      <workItem from="1674834518537" duration="514000" />
+      <workItem from="1675328469166" duration="3537000" />
+      <workItem from="1675338611115" duration="12534000" />
+      <workItem from="1675413765428" duration="15277000" />
+      <workItem from="1675435851047" duration="2488000" />
+      <workItem from="1675504891506" duration="1235000" />
+      <workItem from="1675687901542" duration="6806000" />
+      <workItem from="1675702489387" duration="6378000" />
+      <workItem from="1675709095661" duration="85000" />
+    </task>
+    <task id="LOCAL-00001" summary="testpush">
+      <created>1674573762730</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1674573762730</updated>
+    </task>
+    <task id="LOCAL-00002" summary="removing testpush">
+      <created>1674573862814</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1674573862814</updated>
+    </task>
+    <task id="LOCAL-00003" summary="changing videooutput to gui, updating gui file">
+      <created>1674576565225</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1674576565225</updated>
+    </task>
+    <task id="LOCAL-00004" summary="sorting code">
+      <created>1674576609974</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1674576609974</updated>
+    </task>
+    <task id="LOCAL-00005" summary="optimizing goal counter">
+      <created>1674586902010</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1674586902010</updated>
+    </task>
+    <task id="LOCAL-00006" summary="optimizing goal counter">
+      <created>1674593288409</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1674593288409</updated>
+    </task>
+    <task id="LOCAL-00007" summary="added manual modus">
+      <created>1674599260919</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1674599260919</updated>
+    </task>
+    <task id="LOCAL-00008" summary="improved manual modus">
+      <created>1674633639528</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1674633639528</updated>
+    </task>
+    <task id="LOCAL-00009" summary="added config file for better and faster calibration results">
+      <created>1674636546816</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1674636546816</updated>
+    </task>
+    <task id="LOCAL-00010" summary="edit source files">
+      <created>1674816930105</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1674816930105</updated>
+    </task>
+    <task id="LOCAL-00011" summary="edit cameras fps">
+      <created>1674824998882</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1674824998882</updated>
+    </task>
+    <task id="LOCAL-00012" summary="edit frame rate input in first queue to prevent flooding">
+      <created>1675343907265</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1675343907265</updated>
+    </task>
+    <task id="LOCAL-00013" summary="creating new process for game analytics">
+      <created>1675417737421</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1675417737421</updated>
+    </task>
+    <task id="LOCAL-00014" summary="editing analytics process and inserting FPS border for videostream">
+      <created>1675421856429</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1675421856429</updated>
+    </task>
+    <task id="LOCAL-00015" summary="imporving analytics process">
+      <created>1675438350361</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1675438350361</updated>
+    </task>
+    <task id="LOCAL-00016" summary="deactivate analytics">
+      <created>1675510116762</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1675510116762</updated>
+    </task>
+    <task id="LOCAL-00017" summary="updating analytics and edit goal shoot path">
+      <created>1675694777338</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1675694777338</updated>
+    </task>
+    <task id="LOCAL-00018" summary="implementing shoot analytics in gui, changed matplotlib to cv2 for shooting path">
+      <created>1675709177119</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1675709177119</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
+>>>>>>> Stashed changes
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

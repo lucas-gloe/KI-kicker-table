@@ -163,11 +163,6 @@ def define_balls_position(hsv_img, game_config, game_flags):
     center_y = 0
     ball_color = game_config["ball_color"]
 
-    # if not self.results_from_calibration and self.ball_was_found:
-    #     self.ball_color = [int((self._colors[0][0] + self.__recalibrated_ball_color[0]) / 2),
-    #                         int((self._colors[0][1] + self.__recalibrated_ball_color[1]) / 2),
-    #                         int((self._colors[0][2] + self.__recalibrated_ball_color[2]) / 2)]
-
     lower_color = np.asarray(ball_color)
     upper_color = np.asarray(ball_color)
     lower_color = lower_color - [10, 50, 50]
@@ -204,27 +199,13 @@ def define_balls_position(hsv_img, game_config, game_flags):
         # save the current position of the ball into an array
         _current_ball_position = [center_x, center_y]
 
-        # recalibrate ball color in current frame
-        # self.__recalibrated_ball_color = self._dc.recalibrate_ball_color(hsv_img, center_x, center_y,
-        #                                                                  self._team1_figures, self._team2_figures,
-        #                                                                  self.players_rods)
         game_flags['ball_was_found'] = True
 
     elif len(objects) == 0:
-        # if not game_flags['predicted_value_added']:
-        #     # _current_ball_position = (_predicted[0], _predicted[1])
-        #     _current_ball_position = [-1, -1]
-        #     game_flags['predicted_value_added'] = True
-        #     game_flags['ball_was_found'] = False
-        # else:
         print("ball not found")
         _current_ball_position = [-1, -1]
         game_flags['ball_was_found'] = False
     else:
-        #     #self.__calculate_balls_position(objects)
-        # if center_x != 0 & center_y != 0:
-        #     _current_ball_position = [center_x, center_y]
-        # else:
         print("ball not found")
         _current_ball_position = [-1, -1]
         game_flags['ball_was_found'] = False
