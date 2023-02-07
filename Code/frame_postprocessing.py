@@ -6,30 +6,29 @@ def count_game_score(ball_positions, game_config, current_game_results, game_fla
     """
     Count game score +1  of a certain team if a goal was shot
     """
-    if len(ball_positions) > 1 and 0 < ball_positions[-2][0] < game_config['goal2'][1][0] and game_config['goal2'][0][
-        1] < \
-            ball_positions[-2][1] < game_config['goal2'][1][1] and ball_positions[-1] == [-1, -1] and game_flags['_ball_reenters_game']:
-        game_flags['_goal2_detected'] = True
-        game_flags['goalInCurrentFrame'] = True
-
-    if len(ball_positions) > 1 and ball_positions[-2][0] > game_config['goal1'][0][0] and game_config['goal1'][0][1] < \
-            ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1] and game_flags['_ball_reenters_game']:
+    if len(ball_positions) > 1 and 0 < ball_positions[-2][0] < game_config['goal1'][1][0] and game_config['goal1'][0][
+        1] < ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1] and game_flags[
+        '_ball_reenters_game']:
         game_flags['_goal1_detected'] = True
         game_flags['goalInCurrentFrame'] = True
 
-    if game_flags['_goal2_detected'] and game_flags['goalInCurrentFrame']:
-        current_game_results['counter_team1'] += 1
-        game_flags['goalInCurrentFrame'] = False
+    if len(ball_positions) > 1 and game_config['goal2'][0][0] < ball_positions[-2][0] < game_config['goal2'][1][0] and game_config['goal2'][0][1] < \
+            ball_positions[-2][1] < game_config['goal2'][1][1] and ball_positions[-1] == [-1, -1] and game_flags[
+        '_ball_reenters_game']:
+        game_flags['_goal2_detected'] = True
+        game_flags['goalInCurrentFrame'] = True
 
     if game_flags['_goal1_detected'] and game_flags['goalInCurrentFrame']:
+        current_game_results['counter_team1'] += 1
+        game_flags['goalInCurrentFrame'] = False
+        game_flags['_ball_reenters_game'] = False
+        game_flags['recreate_shoot'] = True
+
+    if game_flags['_goal2_detected'] and game_flags['goalInCurrentFrame']:
         current_game_results['counter_team2'] += 1
         game_flags['goalInCurrentFrame'] = False
-
-    print(len(ball_positions) > 1)
-    print(ball_positions[-2][0] > game_config['goal1'][0][0])
-    print(game_config['goal1'][0][1] < ball_positions[-2][1] < game_config['goal1'][1][1])
-    print(ball_positions[-1] == [-1, -1])
-    print(game_flags['_ball_reenters_game'])
+        game_flags['_ball_reenters_game'] = False
+        game_flags['recreate_shoot'] = True
 
 
 def detect_ball_reentering(ball_positions, game_config, game_flags):
@@ -61,7 +60,6 @@ def predict_ball(ball_positions, game_flags, current_game_results):
         predicted = KalmanFilter().predict(ball_positions[-1][0], ball_positions[-1][1])
         current_game_results["predicted"] = (predicted[0], predicted[1])
         current_ball_position = current_game_results["predicted"]
-        print("ball position predicted")
         return current_ball_position
 
 

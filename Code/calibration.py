@@ -109,9 +109,6 @@ def get_center_scale(calibration_image):
             min_dist = dist_x + dist_y
             center_circle = circle
 
-    # for circle in circles[0]:
-    #     cv2.circle(gray, (int(circle[0]), int(circle[1])), int(circle[2]), (0, 255, 0), 2)
-
     if center_circle[2] < 42.7:
         center_circle[0] = calibration_image.shape[1] / 2
         center_circle[1] = calibration_image.shape[0] / 2
@@ -122,7 +119,6 @@ def get_center_scale(calibration_image):
     cv2.imwrite("gray.JPG", gray)
 
     center = int(center_circle[0]), int(center_circle[1])
-    # print(center_circle)
     radius = center_circle[2]
     ratio_pxcm = radius / 9.4
 
@@ -136,8 +132,8 @@ def calc_field(angle, center, ratio_pxcm):
     :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
     """
 
-    half_field_width = 60 + int(13 * configs.SCALE_FACTOR)  # 60 + 8 for the goalkeepers feed and goal room
-    half_field_height = 34 + int(10 * configs.SCALE_FACTOR)  # 34 +4 for tollerance
+    half_field_width = configs.HALF_FIELD_WIDTH
+    half_field_height = configs.HALF_FIELD_HEIGHT
 
     angle_radial_scale = np.radians(angle)
 
@@ -231,89 +227,6 @@ def calibrate_ball_color(cropped_hsv_img):
     ball_color = tuple(av)
 
     return ball_color
-
-
-# def recalibrate_ball_color(self, img_hsv, x_center, y_center, team1_figures, team2_figures, players_rods):
-#     """
-#     compares ball position with players and rods, no overlapping should happen
-#     Measures the color of the ball and stores it in the class.
-#     :param img_hsv: HSV-image to use for calculation, ball position, players and rod position.
-#     """
-#     team1_figures = np.array(team1_figures)
-#     team2_figures = np.array(team2_figures)
-#
-#     checked_ball_pixels = []
-#
-#     collabs = []
-#
-#     # Get the color of the pixel around the image center
-#     ball_pixels = np.array(
-#         [[x_center - 5, y_center - 5], [x_center - 4, y_center - 4], [x_center - 3, y_center - 3],
-#          [x_center - 2, y_center - 2], [x_center - 1, y_center - 1], [x_center, y_center],
-#          [x_center + 5, y_center + 5], [x_center + 4, y_center + 4], [x_center + 3, y_center + 3],
-#          [x_center + 2, y_center + 2], [x_center + 1, y_center + 1]])
-#
-#     for pixel in ball_pixels:
-#         for team1_figure in team1_figures:
-#             if (team1_figure[0][0] < pixel[0] < team1_figure[0][0]) and (
-#                     team1_figure[0][1] < pixel[1] < team1_figure[1][1]):
-#                 collabs.append(True)
-#             else:
-#                 collabs.append(False)
-#
-#         for team2_figure in team2_figures:
-#             if (team2_figure[0][0] < pixel[0] < team2_figure[1][0]) and (
-#                     team2_figure[0][1] < pixel[1] < team2_figure[1][1]):
-#                 collabs.append(True)
-#             else:
-#                 collabs.append(False)
-#
-#         for rod in players_rods:
-#             if (rod[0, 0] < pixel[0] < rod[1, 0]) and (rod[0, 1] < pixel[1] < rod[1, 1]):
-#                 collabs.append(True)
-#             else:
-#                 collabs.append(False)
-#
-#         if True not in collabs:
-#             checked_ball_pixels.append(pixel)
-#
-#         collabs = []
-#
-#     checked_pixels = np.array(checked_ball_pixels)
-#
-#     if len(checked_pixels) >= 1:
-#         checked_pixels_x = checked_pixels[:, 0]
-#         checked_pixels_y = checked_pixels[:, 1]
-#
-#         colors = img_hsv[checked_pixels_y, checked_pixels_x]
-#
-#         # colors = img_hsv[y_center - 5:y_center + 6, x_center - 5:x_center + 6] # [30:40, 60:70]
-#         lower_border_arr = [np.min(colors[:, 0]), np.min(colors[:, 1]), np.min(colors[:, 2])]
-#         upper_border_arr = [np.max(colors[:, 0]), np.max(colors[:, 1]), np.max(colors[:, 2])]
-#
-#         # Create a mask for the areas with a color similar to the center pixel
-#         lower_border_arr = np.array(lower_border_arr)
-#         upper_border_arr = np.array(upper_border_arr)
-#
-#         lower_border = tuple(lower_border_arr.tolist())
-#         upper_border = tuple(upper_border_arr.tolist())
-#
-#         mask = cv2.inRange(img_hsv, lower_border, upper_border)
-#
-#         # Average the color values of the masked area
-#         colors = img_hsv[mask == 255]
-#         h_mean = int(round(np.mean(colors[:, 0])))
-#         s_mean = int(round(np.mean(colors[:, 1])))
-#         v_mean = int(round(np.mean(colors[:, 2])))
-#
-#         av = [h_mean, s_mean, v_mean]
-#         self.ball_color = tuple(av)
-#
-#         return self.ball_color
-#
-#     else:
-#         no_adaption = [0, 0, 0]
-#         return no_adaption
 
 def calibrate_team_color(cropped_hsv_img, team_number):
     """
@@ -466,10 +379,6 @@ def __rgb2hex(color):
 
 def initialize_GUI_layout(FONT):
 
-    # configs.stopped = False
-    # configs.analysis = analysis
-    # configs.frame = frame
-
     # layout of the GUI
     sg.theme('Reddit')
 
@@ -491,10 +400,12 @@ def initialize_GUI_layout(FONT):
          sg.Button('goal-1', key="-manual_game_counter_team_2_down-", button_color='grey', font=(FONT, 8))],
         [sg.Text("", key='-score_team_1-', font=(FONT, 45)), sg.Text(" : ", font=(FONT, 20)),
          sg.Text("", key='-score_team_2-', font=(FONT, 45))],
-        [sg.Text("Team 1", font=(FONT, 20)), sg.Text("Team 2", font=(FONT, 20))],
-        [sg.Text("")],
+        [sg.Text("Team 1", font=(FONT, 15)),
+         sg.Text("Team 2", font=(FONT, 15))],
         [sg.Text('Ball Speed:', font=(FONT, 10)),
          sg.Text("NOT SET YET", key='-ball_speed-', font=(FONT, 10))],
+        [sg.Text('FPS:', font=(FONT, 10)),
+         sg.Text("0", key='-fps-', font=(FONT, 10))],
         [sg.Text('Press S to save configuration image', key='-config_img-', font=(FONT, 10))]
     ]
 
@@ -520,7 +431,7 @@ def initialize_GUI_layout(FONT):
          sg.Text("", key='-third_last_game_team2-', font=(FONT, 10))]
     ]
 
-    configs = [
+    configurations = [
         [sg.Frame("", game_configuration, expand_x=True, expand_y=True, element_justification='c'),
          sg.Frame("", last_games, expand_x=True, expand_y=True, element_justification='c')]
     ]
@@ -531,15 +442,16 @@ def initialize_GUI_layout(FONT):
         [sg.Text("Key Bindings", text_color='orange', font=(FONT, 15))],
         [sg.Text('Press N to start new game', font=(FONT, 10))],
         [sg.Text("Press C to show kicker, press F to hide kicker", font=(FONT, 10))],
-        [sg.Text("Press A to show contours, press D to hide contours", font=(FONT, 10))]
+        [sg.Text("Press A to show contours, press D to hide contours", font=(FONT, 10))],
+        [sg.Text("Press M to switch to manual mode, l for automatic", font=(FONT, 10))],
+        [sg.Text("Press K to loop through the frames", font=(FONT, 10))]
     ]
 
     # left frame
 
     basic_information = [
         [sg.Frame("", game_score_and_speed, expand_x=True, expand_y=True, element_justification='c')],
-        [sg.Frame("", configs, border_width=0, expand_x=True, expand_y=True)],
-        [sg.Frame("", key_bindings, expand_x=True, expand_y=True, element_justification='c')]
+        [sg.Frame("", configurations, border_width=0, expand_x=True, expand_y=True)]
     ]
 
     game_stats = [
@@ -552,7 +464,6 @@ def initialize_GUI_layout(FONT):
 
     heat_map = [
         [sg.Text("Place Holder", text_color='orange', font=(FONT, 15))]
-        # [sg.Image(filename="", key="-heat_map-")]
     ]
 
     blank_frame = [
@@ -564,9 +475,10 @@ def initialize_GUI_layout(FONT):
     ]
 
     deep_information = [
-        [sg.Frame("", heat_map, expand_x=True, expand_y=True, element_justification='c'),
-         sg.Frame("", blank_frame, expand_x=True, expand_y=True, element_justification='c')],
-        [sg.Frame("", blank_frame2, expand_x=True, expand_y=True, element_justification='c')]
+        [sg.Frame("", key_bindings, expand_x=True, expand_y=True, element_justification='c'),
+         sg.Frame("", heat_map, expand_x=True, expand_y=True, element_justification='c'),
+         sg.Frame("", blank_frame, expand_x=True, expand_y=True, element_justification='c'),
+         sg.Frame("", blank_frame2, expand_x=True, expand_y=True, element_justification='c')]
     ]
 
     # right frame
@@ -577,18 +489,11 @@ def initialize_GUI_layout(FONT):
 
     ################# final gui layout #################
 
-    # game_info = [
-    #     [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 550))],
-    #     [sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 300))]
-    # ]
-
-    # configs._layout = [
-    #     [sg.Frame("", game_frame, border_width=0, expand_x=True, expand_y=True, size=(1400, 700)),sg.Frame("", game_info, border_width=0, expand_x=True, expand_y=True)]
-    # ]
-
     _layout = [
-        [sg.Frame("Game Information", game_stats, border_width=0, size=(350, 700)),
-         sg.Frame("Game Statistics", game_analysis, border_width=0, size=(350, 700))]
+        [sg.Frame("", game_frame, border_width=0, expand_x=True, expand_y=True,
+                  size=(int(1920 * configs.SCALE_FACTOR), int(1080 * configs.SCALE_FACTOR))),
+         sg.Frame("Game Information", game_stats, border_width=0, size=(350, int(1080 * configs.SCALE_FACTOR)))],
+        [sg.Frame("Game Statistics", game_analysis, border_width=0, size=(int(1920 * configs.SCALE_FACTOR) + 350, 200))]
     ]
 
     window = sg.Window('Kicker Game', _layout)
