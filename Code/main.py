@@ -1,115 +1,241 @@
-from Game import Game
-from video_get import VideoGetter
-from video_get_from_pic import VideoGetterFromPic
-from video_get_from_vid import VideoGetterFromVid
-from video_show import VideoShower
-from gui import GUI
-from detect_color import ColorTracker
-from detect_field import FieldDetector
-from analysis import Analysis
-
-import detect_field
-import detect_color
-from tqdm import tqdm
-import os.path
-import keyboard
 import cv2
-from configs import video_stream, video_vid, video_pic
+import multiprocessing
+import time
+import numpy as np
+import os.path
+from gui import gui_handle
+from calibration import calibrate, calibrate_before_first_image
+import configs
+import frame_preprocessing
+import frame_postprocessing
 
 
+def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
+    # resizing frame for speed optimisation
+    width = int(1920 * configs.SCALE_FACTOR)
+    height = int(1080 * configs.SCALE_FACTOR)
+    dim = (width, height)
+    start_time = None
+    if start_time is None:
+        start_time = time.time()
+        start_time -= 0.001
 
-def main():
-    """
-    Main thread serves only to pass frames between VideoGet, game and
-    VideoShow objects/threads.
-    # TODO: Kommentare der Funktionen erweitern
-    """
-    first_frame = True
-    start_gui = True
-    last_frame_id = None
-
-    SCALE_PERCENT = 40  # percent of original size
-
-    if video_stream:
-        video_getter = VideoGetter(SCALE_PERCENT, VideoGetter.CAMERA_1).start()
-    if video_pic:
-        video_getter = VideoGetterFromPic(SCALE_PERCENT, VideoGetterFromPic.PICTURE).start()
-    if video_vid:
-        video_getter = VideoGetterFromVid(SCALE_PERCENT, VideoGetterFromVid.VID).start()
-
-    video_shower = VideoShower(video_getter.get_frame(), video_getter.get_frame()).start()
-    game = Game(SCALE_PERCENT).start()
-    #analysis = Analysis().start()
-    gui = GUI(game).start()
-
-    detected_field = detect_field.FieldDetector(SCALE_PERCENT)
-    detected_color = detect_color.ColorTracker(SCALE_PERCENT)
-
-    def _calibrate_color(ball_position_at_center_point):
-        """
-        The user has to put the ball onto the center spot for calibration. the taken image will be used to read the colors from the marked positions.
-        :param_type: calibration img, array
-        :return: ball color, team colors
-        """
-
-        calibration_image = cv2.cvtColor(cv2.imread(r"./calibration_image.JPG"), cv2.COLOR_BGR2HSV)
-
-        # The initialization is done with only a small part of the image around the center spot.
-        x1 = int(round(ball_position_at_center_point[0] - (calibration_image.shape[1] / 10), 0))
-        x2 = int(round(ball_position_at_center_point[0] + (calibration_image.shape[1] / 10), 0))
-        y1 = int(round(ball_position_at_center_point[1] - (calibration_image.shape[0] / 10), 0))
-        y2 = int(round(ball_position_at_center_point[1] + (calibration_image.shape[0] / 10), 0))
-
-        image_crop = calibration_image[y1:y2, x1:x2]
-
-        cv2.imwrite("cropped_calibration_img.JPG", image_crop)
-
-        ball_color = detected_color.calibrate_ball_color(image_crop)
-        team1_color = detected_color.calibrate_team_color(image_crop, 1)
-        team2_color = detected_color.calibrate_team_color(image_crop, 2)
-
-        return [ball_color, team1_color, team2_color]
-
-    def generator():
-        while True:
-            yield
-
-    for _ in tqdm(generator()): # while True loop in tqdm generator to check the fps counter
-
-        if video_getter.stopped or video_shower.stopped:
-            #video_shower.stop()
-            video_getter.stop()
-            #gui.stop()
+    while True:
+        start_time_running1 = time.time()
+        # start_time_running = time.time()
+        frame_id, frame = frame_queue.get()
+        # print("one frame iteration take from frame_queue ", (time.time() - start_time_running))
+        # start_time_running = time.time()
+        preprocessing_result, resized_frame = preprocessing_action(frame, game_config, dim, game_flags)
+        # print("one frame iteration total preprocessing ", (time.time() - start_time_running))
+        # start_time_running = time.time()
+        preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
+        # print("one frame iteration put into preprocessed_queue ", (time.time() - start_time_running))
+        if user_input.value == ord('q'):
+            print("Worker stopped")
             break
+        # print("total time preprocessing FPS:", frame_id / (time.time() - start_time))
+        # print("total time preprocessing per frame", (time.time() - start_time_running1))
+        # print("")
 
-        frame = video_getter.get_frame()
-        if first_frame:
-            file_exists = os.path.exists("../Code/calibration_image.JPG")
-            if file_exists:
-                calibration_image = cv2.imread(r"./calibration_image.JPG")
-                detected_field.get_angle(calibration_image)
-                detected_field.get_center_scale(calibration_image)
-                field = detected_field.calc_field()
-                ratio_pxcm = detected_field.get_var("ratio_pxcm")
-                ball_color, team1_color, team2_color = _calibrate_color(detected_field.get_var("center"))
-                first_frame = False
+
+def preprocessing_action(frame, game_config, dim, game_flags):
+    # start_time_running = time.time()
+    analysis_results = []
+    resized_frame = cv2.resize(frame, dim)
+    # print("one frame iteration rezising ", (time.time() - start_time_running))
+    # start_time_running = time.time()
+    hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
+    # print("one frame iteration hsv_color ", (time.time() - start_time_running))
+    # start_time_running = time.time()
+    ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config, game_flags)
+    # print("one frame iteration ball_position ", (time.time() - start_time_running))
+    # start_time_running = time.time()
+    team_1_positions, team1_on_field, ranks_team1 = frame_preprocessing.define_players_position(hsv_img,
+                                                                                                game_config,
+                                                                                                "team1_color", 1)
+    # print("one frame iteration team_1_positions ", (time.time() - start_time_running))
+    # start_time_running = time.time()
+
+    team_2_positions, team2_on_field, ranks_team2 = frame_preprocessing.define_players_position(hsv_img,
+                                                                                                game_config,
+                                                                                                "team2_color", 2)
+    # print("one frame iteration team_2_positions ", (time.time() - start_time_running))
+    analysis_results.append(
+        (ball_position, team_1_positions, team_2_positions, team1_on_field, team2_on_field, ranks_team1, ranks_team2))
+    # print(analysis_results[0][0])
+    return analysis_results, resized_frame
+
+
+def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_positions, game_flags,
+                current_game_results):
+    # get start time
+    start_time = None
+    frame_dict = {}
+    game = {}
+    predicted_ball_position = [-1, -1]
+    expect_id = 0
+    current_result = {}
+    while True:
+        frame_id, frame, preprocessing_result = preprocessed_queue.get()
+        if user_input.value == ord('q'):
+            print("Game stopped")
+            break
+        if start_time is None:
+            start_time = time.time()
+            start_time -= 0.001
+        frame_dict[frame_id] = (frame, preprocessing_result)
+        while (expect_id in frame_dict):
+            # start_time_2 = time.time()
+            current_frame, current_preprocessing_result = frame_dict[expect_id]
+            # print(current_preprocessing_result[0][0])
+            fps = expect_id / (time.time() - start_time)
+
+            current_result['fps'] = fps
+            current_result['ball_position'] = current_preprocessing_result[0][0]
+            current_result['team1_positions'] = current_preprocessing_result[0][1]
+            current_result['team2_positions'] = current_preprocessing_result[0][2]
+            current_result['team1_on_field'] = current_preprocessing_result[0][3]
+            current_result['team2_on_field'] = current_preprocessing_result[0][4]
+            current_result['ranks_team1'] = current_preprocessing_result[0][5]
+            current_result['ranks_team2'] = current_preprocessing_result[0][6]
+
+            if current_result['ball_position'] != [-1, -1]:
+                predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags,
+                                                                            current_game_results)
+                ball_positions.append(current_result['ball_position'])
+                game_flags["predicted_value_added"] = False
+            if current_result['ball_position'] == [-1, -1]:
+                if not game_flags["predicted_value_added"]:
+                    ball_positions.append(predicted_ball_position)
+                    current_result["predicted"] = predicted_ball_position
+                    game_flags["predicted_value_added"] = True
+                else:
+                    ball_positions.append(current_result['ball_position'])
+
+            print(ball_positions)
+
+            frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
+
+            frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
+
+            # ball_positions.append(current_result['ball_position'])
+
+            result_queue.put((current_frame, current_result, expect_id))
+            # print(current_result)
+            del frame_dict[expect_id]
+            expect_id += 1
+
+            # print("total time update game", time.time() - start_time_2)
+            # print("")
+
+
+if __name__ == '__main__':
+    print("Starting...")
+
+    print("setting up queues")
+    # create a queue for frames
+    frame_queue = multiprocessing.Queue()
+    # create a queue for preprocessed, not sorted frames
+    preprocessed_queue = multiprocessing.Queue()
+    # create a queue for finished processed and sorted frames
+    result_queue = multiprocessing.Queue()
+
+    print("setting up shared memory inputs")
+    user_input = multiprocessing.Value('i', ord('A'))
+
+    manager = multiprocessing.Manager()
+    game_config = manager.dict()
+
+    manager2 = multiprocessing.Manager()
+    total_game_results = manager2.list()
+    total_game_results.append([0, 0])
+
+    manager3 = multiprocessing.Manager()
+    ball_positions = manager3.list()
+    ball_positions.append([-1, -1])
+
+    manager4 = multiprocessing.Manager()
+    game_flags = manager4.dict()
+    game_flags["results"] = True
+    game_flags['show_objects'] = True
+    game_flags['show_kicker'] = False
+    game_flags['new_game'] = False
+    game_flags['_ball_reenters_game'] = True
+    game_flags['_goal1_detected'] = False
+    game_flags['_goal2_detected'] = False
+    game_flags['predicted_value_added'] = False
+    game_flags['ball_was_found'] = False
+    game_flags["goalInCurrentFrame"] = False
+
+    manager5 = multiprocessing.Manager()
+    current_game_results = manager5.dict()
+    current_game_results['counter_team1'] = 0
+    current_game_results['counter_team2'] = 0
+
+    print("initialize GUI")
+    window = calibrate_before_first_image()
+
+    print("Start Video Capture")
+    cap = cv2.VideoCapture(configs.source)  # open camera/videostream
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # heigth of the frame
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # width of the frame
+    cap.set(cv2.CAP_PROP_FPS, 240)  # set camera frame rate to 240 fps
+
+    # print(cap.get(cv2.CAP_PROP_FPS))
+
+    # start 4 worker processes to process the frames
+    num_workers = 2
+    for i in range(num_workers):
+        preprocessing_worker = multiprocessing.Process(target=preprocess_frame,
+                                                       args=(frame_queue, preprocessed_queue, user_input, game_config,
+                                                             game_flags))
+        preprocessing_worker.start()
+    postprocessing_worker = multiprocessing.Process(target=update_game,
+                                                    args=(preprocessed_queue, result_queue, user_input, game_config,
+                                                          ball_positions, game_flags, current_game_results))
+    postprocessing_worker.start()
+    gui_worker = multiprocessing.Process(target=gui_handle,
+                                         args=(window, result_queue, user_input, game_config, total_game_results,
+                                               ball_positions, game_flags, current_game_results))
+    gui_worker.start()
+
+    frame_id = 0
+
+    print("Start processing")
+
+    calibrated = False
+
+    while True:
+        # read a frame from the camera
+        ret, frame = cap.read()
+        # add the frame to the queue for processing
+        if calibrated == False:
+            file_exists = os.path.exists(r"./calibration_image.JPG")
+            if not file_exists:
+                width = int(1920 * configs.SCALE_FACTOR)
+                height = int(1080 * configs.SCALE_FACTOR)
+                dim = (width, height)
+                resized_frame = cv2.resize(frame, dim)
+                print("file not found, set calibration file by pressing S")
+                result_queue.put((resized_frame, None, None))
             else:
-                out_frame = detected_field.draw_calibration_marker(frame)
-                cv2.waitKey(1)
-                if keyboard.is_pressed("s"):
-                    cv2.imwrite("./calibration_image.JPG", out_frame)
+                print("start calibration")
+                calibration_image = cv2.imread(r"./calibration_image.JPG")
+                calibrate(calibration_image, game_config)
+                print("finished calibration")
+                calibrated = True
 
-        if not first_frame:
-            out_frame, ball_mask = game.interpret_frame(frame, ball_color, field, team1_color, team2_color, ratio_pxcm)
-            gui.frame = out_frame
+        if calibrated == True:
 
-        video_shower.frames_to_show.append(out_frame)
-        video_shower.balls_to_show.append(ball_mask)
-        if len(video_getter.frames_to_process) > 1:
-            video_getter.frames_to_process.pop(0)
+            for i in range(1):  # simulate 240fps with 30fps camera
+                frame_queue.put((frame_id, frame))
+                frame_id += 1
 
-        print(len(video_getter.frames_to_process), "getter")
-        print(len(video_shower.frames_to_show), "shower")
+        if user_input.value == ord('q'):
+            for i in range(num_workers):  # put last frames for workers in queue
+                frame_queue.put((frame_id, frame))
+                frame_id += 1
+            print("main stopped")
 
-if __name__ == "__main__":
-    main()
+            break
