@@ -13,38 +13,39 @@ def draw_fps(frame, results):
 
 def draw_field_calibrations(frame, game_configs):
     """
-    show football field contour for calibration on frame if a certain button was pressed
+    show football field contour for calibration on frame
     """
-    cv2.line(frame, (int(game_configs['field'][0][0]), int(game_configs['field'][0][1])),
-             (int(game_configs['field'][1][0]), int(game_configs['field'][1][1])),
-             (0, 255, 0), 2)
-    cv2.line(frame, (int(game_configs['field'][2][0]), int(game_configs['field'][2][1])),
-             (int(game_configs['field'][3][0]), int(game_configs['field'][3][1])),
-             (0, 255, 0), 2)
-    cv2.line(frame, (int(game_configs['field'][0][0]), int(game_configs['field'][0][1])),
-             (int(game_configs['field'][3][0]), int(game_configs['field'][3][1])),
-             (0, 255, 0), 2)
-    cv2.line(frame, (int(game_configs['field'][1][0]), int(game_configs['field'][1][1])),
-             (int(game_configs['field'][2][0]), int(game_configs['field'][2][1])),
-             (0, 255, 0), 2)
-    cv2.rectangle(frame, (int(game_configs['goal1'][0][0]), int(game_configs['goal1'][0][1])),  # tor von Team1, orange
-                  (int(game_configs['goal1'][1][0]), int(game_configs['goal1'][1][1])),
-                  (0, 255, 0), 2)
-    cv2.rectangle(frame, (int(game_configs['goal2'][0][0]), int(game_configs['goal2'][0][1])),  # tor von Team2, blau
-                  (int(game_configs['goal2'][1][0]), int(game_configs['goal2'][1][1])),
-                  (0, 255, 0), 2)
-    cv2.rectangle(frame, (int(game_configs['throw_in_zone'][0][0]), int(game_configs['throw_in_zone'][0][1])),
-                  (int(game_configs['throw_in_zone'][1][0]), int(game_configs['throw_in_zone'][1][1])),
-                  (0, 255, 0), 2)
+    line_color = (0, 255, 0)
+    line_thickness = 2
+
+    # Draw field contour
+    field_corners = []
+    for pt in game_configs['field']:
+        field_corners.append((int(pt[0]), int(pt[1])))
+    cv2.line(frame, game_configs['field'][0], game_configs['field'][1], line_color, line_thickness)
+    cv2.line(frame, game_configs['field'][2], game_configs['field'][3], line_color, line_thickness)
+    cv2.line(frame, game_configs['field'][0], game_configs['field'][3], line_color, line_thickness)
+    cv2.line(frame, game_configs['field'][1], game_configs['field'][2], line_color, line_thickness)
+
+    # Draw goal1
+    cv2.rectangle(frame, game_configs['goal1'][0], game_configs['goal1'][1], line_color, line_thickness)
+
+    # Draw goal2
+    cv2.rectangle(frame, game_configs['goal2'][0], game_configs['goal2'][1], line_color, line_thickness)
+
+    # Draw throw-in zone
+    cv2.rectangle(frame, game_configs['throw_in_zone'][0], game_configs['throw_in_zone'][1], line_color, line_thickness)
+
+    # Draw players rods
     for rod in game_configs['players_rods']:
-        cv2.rectangle(frame, (int(rod[0][0]), int(rod[0][1])),
-                      (int(rod[1][0]), int(rod[1][1])), (0, 255, 255), 2)
+        cv2.rectangle(frame, rod[0], rod[1], (0, 255, 255), line_thickness)
+
     return frame
 
 
 def draw_ball(frame, results):
     """
-    Draw a circle at the balls position and name the Object "ball"
+    draw a circle at the balls position and name the Object "ball"
     """
     # draw a circle for the ball
     if results['ball_position'] != [-1, -1]:
@@ -55,9 +56,9 @@ def draw_ball(frame, results):
     return frame
 
 
-def draw_predicted_ball(frame, results, game_flags):
+def draw_predicted_ball(frame, results):
     """
-    Draw a circle at the predicted balls position if there is no ball
+    draw a circle at the predicted balls position if there is no ball
     detected in the frame and name the Object "ball"
     """
     if results["ball_position"] == [-1, -1]:

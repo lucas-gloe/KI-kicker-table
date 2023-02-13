@@ -4,6 +4,9 @@ import configs
 
 
 def define_players_position(hsv_img, game_config, team_dict_number, team_number):
+    """
+    create mask for player-colored object and search for contours on that mask
+    """
     _ranked = []
 
     team_color = game_config[team_dict_number]
@@ -21,11 +24,11 @@ def define_players_position(hsv_img, game_config, team_dict_number, team_number)
 
     players_mask = cv2.inRange(hsv_img, lower_color, upper_color)
 
-    objects = __find_objects(players_mask, team_number, game_config)
+    objects = _find_objects(players_mask, team_number, game_config)
 
     if len(objects) >= 1:
         players_on_field = True
-        ranked = __load_players_names(objects, team_number)
+        ranked = _load_players_names(objects, team_number)
         player_positions = objects
         return player_positions, players_on_field, ranked
 
@@ -35,22 +38,21 @@ def define_players_position(hsv_img, game_config, team_dict_number, team_number)
         return [], players_on_field, []
 
 
-def __find_objects(mask, team_number, game_config):
+def _find_objects(mask, team_number, game_config):
     """
     tracking algorithm to find the contours on the masks
-    return: Contours on the masks
-    source: https://www.computervision.zone/courses/learn-opencv-in-3-hours/
+    parts of code related to source : https://www.computervision.zone/courses/learn-opencv-in-3-hours/
     """
     # outline the contours on the mask
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     objects = []
     # looping over every contour which was found
-    for cnt in contours:
-        area = cv2.contourArea(cnt)
+    for contour in contours:
+        area_from_contours = cv2.contourArea(contour)
         # saving contours properties in variables if a certain area is detected on the mask (to prevent blurring)
-        if area > 20:
-            peri = cv2.arcLength(cnt, True)
-            approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        if area_from_contours > 20:
+            peri = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
             x, y, w, h = cv2.boundingRect(approx)
             white_contour = x, y, w, h
             objects.append(white_contour)
@@ -65,15 +67,14 @@ def __find_objects(mask, team_number, game_config):
                     objects[:, 1] > game_config['match_field'][1][1]))), axis=0)
 
     if team_number == 1 or team_number == 2:
-        objects = __remove_overlapping_bounding_boxes(objects, team_number, game_config)
+        objects = _remove_overlapping_bounding_boxes(objects, team_number, game_config)
 
     return objects
 
 
-def __load_players_names(objects, team_number):
+def _load_players_names(objects, team_number):
     """
     take the position of alle players of a team and rank them sorted from the position of the field
-    Return: Array with sorted list of players ranks
     """
     if len(objects) > 0:
         position_matrix = np.array(objects)
@@ -86,7 +87,7 @@ def __load_players_names(objects, team_number):
         return ranks
 
 
-def __remove_overlapping_bounding_boxes(objects, team_number, game_config):
+def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
     """
     check if a player was detected with more than one bounding box. If so combine these boxes to one big box
     so every player is only detected once
@@ -109,18 +110,18 @@ def __remove_overlapping_bounding_boxes(objects, team_number, game_config):
 
     while i < len(_max_bounding_boxes):
         for j, max_box2 in enumerate(_max_bounding_boxes[i + 1:]):
-            if (__get_rod((_max_bounding_boxes[i][0][0] + (
-                    abs(_max_bounding_boxes[i][0][0] - _max_bounding_boxes[i][1][0]) / 2)), game_config) == __get_rod(
-                (max_box2[0][0] + (abs(max_box2[0][0] - max_box2[1][0]) / 2)), game_config) and (
-                    (max_box2[0][1] <= _max_bounding_boxes[i][0][1] <= max_box2[1][1]) or (
-                    max_box2[0][1] <= _max_bounding_boxes[i][1][1] <= max_box2[1][1]))):
-                _max_bounding_boxes[i] = [
-                    [min(_max_bounding_boxes[i][0][0], max_box2[0][0]),
-                     int(min(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
-                             max_box2[1][1]))],
-                    [max(_max_bounding_boxes[i][1][0], max_box2[1][0]),
-                     int(max(_max_bounding_boxes[i][0][1], max_box2[0][1], _max_bounding_boxes[i][1][1],
-                             max_box2[1][1]))]]
+            if (get_rod((_max_bounding_boxes[i][0][0] + (
+                    abs(_max_bounding_boxes[i][0][0] - _max_bounding_boxes[i][1][0]) / 2)), game_config) ==
+                    get_rod((max_box2[0][0] + (abs(max_box2[0][0] - max_box2[1][0]) / 2)), game_config) and
+                    (_max_bounding_boxes[i][0][1] <= max_box2[0][1] <= _max_bounding_boxes[i][1][1] or
+                     _max_bounding_boxes[i][0][1] <= max_box2[1][1] <= _max_bounding_boxes[i][1][1])):
+                _max_bounding_boxes[i] = [[min(_max_bounding_boxes[i][0][0], max_box2[0][0]),
+                                           min(_max_bounding_boxes[i][0][1], max_box2[0][1],
+                                               _max_bounding_boxes[i][1][1], max_box2[1][1])],
+                                          [max(_max_bounding_boxes[i][1][0], max_box2[1][0]),
+                                           max(_max_bounding_boxes[i][0][1], max_box2[0][1],
+                                               _max_bounding_boxes[i][1][1], max_box2[1][1])]
+                                          ]
                 _max_bounding_boxes.pop(i + 1 + j)
                 i = i - 1
                 break
@@ -134,7 +135,7 @@ def __remove_overlapping_bounding_boxes(objects, team_number, game_config):
         return _max_bounding_boxes_team_2
 
 
-def __get_rod(x, game_config):
+def get_rod(x, game_config):
     """
     check at which rod the detected shape is positioned
     """
@@ -158,6 +159,9 @@ def __reverse_ranks(ranks):
 
 
 def define_balls_position(hsv_img, game_config, game_flags):
+    """
+    create mask for ball-colored object and search for contours on that mask
+    """
     _predicted = (0, 0)
     center_x = 0
     center_y = 0
@@ -179,9 +183,9 @@ def define_balls_position(hsv_img, game_config, game_flags):
     hsv_img = cv2.GaussianBlur(hsv_img, (3, 3), cv2.BORDER_DEFAULT)
 
     mask = cv2.inRange(hsv_img, lower_color, upper_color)
-    ball_mask = __smooth_mask(mask)
+    ball_mask = _smooth_mask(mask)
 
-    objects = __find_objects(ball_mask, -1, game_config)
+    objects = _find_objects(ball_mask, -1, game_config)
     objects.flatten()
 
     if len(objects) == 1:
@@ -213,11 +217,10 @@ def define_balls_position(hsv_img, game_config, game_flags):
     return _current_ball_position
 
 
-def __smooth_mask(mask):
+def _smooth_mask(mask):
     """
     The mask created inDetectBallPosition might be noisy.
-    :param mask: The mask to smooth (Image with bit depth 1)
-    :return: The smoothed mask
+    source: https://www.computervision.zone/courses/learn-opencv-in-3-hours/
     """
     KERNELS = 3
     # create the disk-shaped kernel for the following image processing,

@@ -10,6 +10,9 @@ import frame_postprocessing
 
 
 def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
+    """
+    worker preproccesses frame by defining objects positions on frame
+    """
     # resizing frame for speed optimisation
     width = int(1920 * configs.SCALE_FACTOR)
     height = int(1080 * configs.SCALE_FACTOR)
@@ -17,14 +20,14 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
 
     while True:
         frame_id, frame = frame_queue.get()
-        preprocessing_result, resized_frame = preprocessing_action(frame, game_config, dim, game_flags)
+        preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
         preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
         if user_input.value == ord('q'):
             print("Worker stopped")
             break
 
 
-def preprocessing_action(frame, game_config, dim, game_flags):
+def _preprocessing_action(frame, game_config, dim, game_flags):
     analysis_results = []
     resized_frame = cv2.resize(frame, dim)
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
@@ -43,10 +46,12 @@ def preprocessing_action(frame, game_config, dim, game_flags):
 
 def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_positions, game_flags,
                 current_game_results):
+    """
+    worker who sort and do further proccessess on preprocessed data
+    """
     # get start time
     start_time = None
     frame_dict = {}
-    game = {}
     predicted_ball_position = [-1, -1]
     expect_id = 0
     current_result = {}
@@ -65,25 +70,29 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
                     current_frame, current_preprocessing_result = frame_dict[expect_id]
                     fps = expect_id / (time.time() - start_time)
 
-                    current_result['fps'] = fps
-                    current_result['ball_position'] = current_preprocessing_result[0][0]
-                    current_result['team1_positions'] = current_preprocessing_result[0][1]
-                    current_result['team2_positions'] = current_preprocessing_result[0][2]
-                    current_result['team1_on_field'] = current_preprocessing_result[0][3]
-                    current_result['team2_on_field'] = current_preprocessing_result[0][4]
-                    current_result['ranks_team1'] = current_preprocessing_result[0][5]
-                    current_result['ranks_team2'] = current_preprocessing_result[0][6]
+                    current_result.update({
+                        'fps': fps,
+                        'ball_position': current_preprocessing_result[0][0],
+                        'team1_positions': current_preprocessing_result[0][1],
+                        'team2_positions': current_preprocessing_result[0][2],
+                        'team1_on_field': current_preprocessing_result[0][3],
+                        'team2_on_field': current_preprocessing_result[0][4],
+                        'ranks_team1': current_preprocessing_result[0][5],
+                        'ranks_team2': current_preprocessing_result[0][6]
+                    })
 
                     if current_result['ball_position'] != [-1, -1]:
-                        predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags,
+                        predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
                                                                                     current_game_results)
                         ball_positions.append(current_result['ball_position'])
                         game_flags["predicted_value_added"] = False
                     if current_result['ball_position'] == [-1, -1]:
                         if not game_flags["predicted_value_added"]:
-                            ball_positions.append(predicted_ball_position)
-                            current_result["predicted"] = predicted_ball_position
-                            game_flags["predicted_value_added"] = True
+                            if predicted_ball_position[0] - 15 < ball_positions[-1][0] < predicted_ball_position[
+                                0] + 15:
+                                ball_positions.append(predicted_ball_position)
+                                current_result["predicted"] = predicted_ball_position
+                                game_flags["predicted_value_added"] = True
                         else:
                             ball_positions.append(current_result['ball_position'])
 
@@ -109,25 +118,28 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
                 current_frame, current_preprocessing_result = frame_dict[expect_id]
                 fps = expect_id / (time.time() - start_time)
 
-                current_result['fps'] = fps
-                current_result['ball_position'] = current_preprocessing_result[0][0]
-                current_result['team1_positions'] = current_preprocessing_result[0][1]
-                current_result['team2_positions'] = current_preprocessing_result[0][2]
-                current_result['team1_on_field'] = current_preprocessing_result[0][3]
-                current_result['team2_on_field'] = current_preprocessing_result[0][4]
-                current_result['ranks_team1'] = current_preprocessing_result[0][5]
-                current_result['ranks_team2'] = current_preprocessing_result[0][6]
+                current_result.update({
+                    'fps': fps,
+                    'ball_position': current_preprocessing_result[0][0],
+                    'team1_positions': current_preprocessing_result[0][1],
+                    'team2_positions': current_preprocessing_result[0][2],
+                    'team1_on_field': current_preprocessing_result[0][3],
+                    'team2_on_field': current_preprocessing_result[0][4],
+                    'ranks_team1': current_preprocessing_result[0][5],
+                    'ranks_team2': current_preprocessing_result[0][6]
+                })
 
                 if current_result['ball_position'] != [-1, -1]:
-                    predicted_ball_position = frame_postprocessing.predict_ball(ball_positions, game_flags,
+                    predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
                                                                                 current_game_results)
                     ball_positions.append(current_result['ball_position'])
                     game_flags["predicted_value_added"] = False
                 if current_result['ball_position'] == [-1, -1]:
                     if not game_flags["predicted_value_added"]:
-                        ball_positions.append(predicted_ball_position)
-                        current_result["predicted"] = predicted_ball_position
-                        game_flags["predicted_value_added"] = True
+                        if predicted_ball_position[0] - 15 < ball_positions[-1][0] < predicted_ball_position[0] + 15:
+                            ball_positions.append(predicted_ball_position)
+                            current_result["predicted"] = predicted_ball_position
+                            game_flags["predicted_value_added"] = True
                     else:
                         ball_positions.append(current_result['ball_position'])
 
@@ -166,23 +178,27 @@ if __name__ == '__main__':
 
     manager4 = multiprocessing.Manager()
     game_flags = manager4.dict()
-    game_flags["results"] = True
-    game_flags['show_objects'] = True
-    game_flags['show_kicker'] = False
-    game_flags['new_game'] = False
-    game_flags['manual_mode'] = False
-    game_flags['_ball_reenters_game'] = True
-    game_flags['_goal1_detected'] = False
-    game_flags['_goal2_detected'] = False
-    game_flags['predicted_value_added'] = False
-    game_flags['ball_was_found'] = False
-    game_flags["goalInCurrentFrame"] = False
-    game_flags['one_iteration'] = False
+    game_flags.update({
+        'results': True,
+        'show_objects': True,
+        'show_kicker': False,
+        'new_game': False,
+        'manual_mode': False,
+        '_ball_reenters_game': True,
+        '_goal1_detected': False,
+        '_goal2_detected': False,
+        'predicted_value_added': False,
+        'ball_was_found': False,
+        "goalInCurrentFrame": False,
+        'one_iteration': True
+    })
 
     manager5 = multiprocessing.Manager()
     current_game_results = manager5.dict()
-    current_game_results['counter_team1'] = 0
-    current_game_results['counter_team2'] = 0
+    current_game_results.update({
+        'counter_team1': 0,
+        'counter_team2': 0
+    })
 
     print("initialize GUI")
     window = calibrate_before_first_image()

@@ -5,12 +5,18 @@ import configs
 
 
 def calibrate_before_first_image():
-    window = initialize_GUI_layout(configs.FONT)
+    """
+    initialize the gui to show data output
+    """
+    window = initialize_gui_layout(configs.FONT)
 
     return window
 
 
 def calibrate(calibration_image, game_config):
+    """
+    get calibration information of the current game
+    """
     angle = get_angle(calibration_image)
     center, ratio_pxcm = get_center_scale(calibration_image)
     field = calc_field(angle, center, ratio_pxcm)
@@ -18,29 +24,31 @@ def calibrate(calibration_image, game_config):
     match_field, goal1, goal2, throw_in_zone, players_rods = load_game_field_properties(field)
     gui_ball_color, gui_team1_color, gui_team2_color = convert_tracked_hsv_colors(ball_color, team1_color, team2_color)
 
-    game_config['goal1'] = goal1
-    game_config['goal2'] = goal2
-    game_config['throw_in_zone'] = throw_in_zone
-    game_config['players_rods'] = players_rods
-    game_config['angle'] = angle
-    game_config['field'] = field
-    game_config['match_field'] = match_field
-    game_config['center'] = center
-    game_config['ratio_pxcm'] = ratio_pxcm
-    game_config['ball_color'] = ball_color
-    game_config['team1_color'] = team1_color
-    game_config['team2_color'] = team2_color
-    game_config['gui_ball_color'] = gui_ball_color
-    game_config['gui_team1_color'] = gui_team1_color
-    game_config['gui_team2_color'] = gui_team2_color
+    game_config.update({
+        'goal1': goal1,
+        'goal2': goal2,
+        'throw_in_zone': throw_in_zone,
+        'players_rods': players_rods,
+        'angle': angle,
+        'field': field,
+        'match_field': match_field,
+        'center': center,
+        'ratio_pxcm': ratio_pxcm,
+        'ball_color': ball_color,
+        'team1_color': team1_color,
+        'team2_color': team2_color,
+        'gui_ball_color': gui_ball_color,
+        'gui_team1_color': gui_team1_color,
+        'gui_team2_color': gui_team2_color
+    })
 
     return game_config
 
 
 def get_angle(calibration_image):
     """
-    :param calibration_image: The HSV-image to use for calculation
-    :return: Rotation angle of the field in image
+    define angle of table soccer for playground definition
+    source: https://github.com/StudentCV/TableSoccerCV
     """
     rgb = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     angle = 0
@@ -87,8 +95,8 @@ def get_angle(calibration_image):
 
 def get_center_scale(calibration_image):
     """
-    :param calibration_image: The HSV-image to use for calculation
-    :return: Position of center point in image (tuple), ratio px per cm (reproduction scale)
+    read the center circle of table soccer and compare center size to given camera resolution
+    source: https://github.com/StudentCV/TableSoccerCV
     """
     gray = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
@@ -127,49 +135,40 @@ def get_center_scale(calibration_image):
 
 def calc_field(angle, center, ratio_pxcm):
     """
-    This method needs some class variables. get_angle and get_center_scale
-    have to be called beforehand.
-    :return: field edges [Top left, top right, bottom right and bottom left corner] (list)
+    take calculate arguments to create table soccer playground
+    part of code from source: https://github.com/StudentCV/TableSoccerCV
     """
 
+    field = []
     half_field_width = configs.HALF_FIELD_WIDTH
     half_field_height = configs.HALF_FIELD_HEIGHT
 
     angle_radial_scale = np.radians(angle)
 
-    x2 = int(center[0] - (half_field_width * ratio_pxcm) + np.tan(angle_radial_scale) *
-             (half_field_height * ratio_pxcm))
-    y2 = int(center[1] - np.tan(angle_radial_scale) * (half_field_width * ratio_pxcm) -
-             (half_field_height * ratio_pxcm))
-    top_left = [x2, y2]
+    corners = {
+        0: ["-", "+", "-", "-"],
+        1: ["+", "+", "+", "-"],
+        2: ["+", "-", "+", "+"],
+        3: ["-", "-", "-", "+"]
+    }
 
-    x2 = int(center[0] + (half_field_width * ratio_pxcm) + np.tan(angle_radial_scale) *
-             (half_field_height * ratio_pxcm))
-    y2 = int(center[1] + np.tan(angle_radial_scale) * (half_field_width * ratio_pxcm) -
-             (half_field_height * ratio_pxcm))
-    top_right = [x2, y2]
+    for corner in range(4):
+        x = eval(str(center[0]) + corners[corner][0] + str(half_field_width * ratio_pxcm) + corners[corner][1] + str(
+            np.tan(angle_radial_scale) * (half_field_height * ratio_pxcm)))
+        y = eval(
+            str(center[1]) + corners[corner][2] + str(np.tan(angle_radial_scale) * (half_field_width * ratio_pxcm)) +
+            corners[corner][3] + str(half_field_height * ratio_pxcm))
 
-    x2 = int(center[0] - (half_field_width * ratio_pxcm) - np.tan(angle_radial_scale) *
-             (half_field_height * ratio_pxcm))
-    y2 = int(center[1] - np.tan(angle_radial_scale) * (half_field_width * ratio_pxcm) +
-             (half_field_height * ratio_pxcm))
-    bottom_left = [x2, y2]
+        current_corner = [int(x), int(y)]
+        field.append(current_corner)
 
-    x2 = int(center[0] + (half_field_width * ratio_pxcm) - np.tan(angle_radial_scale) *
-             (half_field_height * ratio_pxcm))
-    y2 = int(center[1] + np.tan(angle_radial_scale) * (half_field_width * ratio_pxcm) +
-             (half_field_height * ratio_pxcm))
-    bottom_right = [x2, y2]
-
-    field = [top_left, top_right, bottom_right, bottom_left]
     return field
 
 
 def calibrate_color(calibration_image, center):
     """
-    The user has to put the ball onto the center spot for calibration. the taken image will be used to read the colors from the marked positions.
-    :param_type: calibration img, array
-    :return: ball color, team colors
+    The taken image will be used to read the colors from the defined calibration positions.
+    source: https://github.com/StudentCV/TableSoccerCV
     """
 
     calibration_image = cv2.cvtColor(calibration_image, cv2.COLOR_BGR2HSV)
@@ -193,11 +192,8 @@ def calibrate_color(calibration_image, center):
 
 def calibrate_ball_color(cropped_hsv_img):
     """
-    Calibration routine.
-    Measures the color of the ball and stores it in the class.
-    :param cropped_hsv_img: HSV-image to use for calculation.
-    The ball has to be positioned in the center
-    :return: None
+    Measures the color around the balls position.
+    part of code from source: https://github.com/StudentCV/TableSoccerCV
     """
     x_center = int(round(cropped_hsv_img.shape[1] / 2))
     y_center = int(round(cropped_hsv_img.shape[0] / 2))
@@ -228,13 +224,11 @@ def calibrate_ball_color(cropped_hsv_img):
 
     return ball_color
 
+
 def calibrate_team_color(cropped_hsv_img, team_number):
     """
-    Calibration routine.
-    Measures the color of the ball and stores it in the class.
-    :param cropped_hsv_img: HSV-image to use for calculation.
-    The ball has to be positioned in the center
-    :return: None
+    Measures the color around the teams positions
+    part of code from source: https://github.com/StudentCV/TableSoccerCV
     """
     # Get the exact point for measuring
     x_center = int(round(cropped_hsv_img.shape[1] / 2))
@@ -249,7 +243,6 @@ def calibrate_team_color(cropped_hsv_img, team_number):
         y_player = y_center
 
     # Get the color of the pixel in the image center
-    color = cropped_hsv_img[y_player, x_player]
     colors = cropped_hsv_img[y_player - int(6 * configs.SCALE_FACTOR):y_player + int(5 * configs.SCALE_FACTOR),
              x_player - int(6 * configs.SCALE_FACTOR):x_player + int(5 * configs.SCALE_FACTOR)]
     lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
@@ -283,81 +276,48 @@ def calibrate_team_color(cropped_hsv_img, team_number):
 def load_game_field_properties(field):
     """
     calculate the position of the field, the goals, the throw-in-zone and the rods.
-    :return: position parameters
     """
+    # calculate match_field
     match_field = np.array([[int(field[0][0]), int(field[0][1])],
                             [int(field[2][0]), int(field[2][1])]])
-    goal1 = np.array([[int(match_field[0][0]), int((np.linalg.norm(
-        (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(
-        configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR))],
-                      [int(match_field[0][0] + int(100 * configs.SCALE_FACTOR)), int((np.linalg.norm(
-                          (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                                                          1]) + int(
-                          configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR))]])
-    goal2 = np.array([[int(match_field[1][0] - int(100 * configs.SCALE_FACTOR)), int((np.linalg.norm(
-        (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]) - int(
-        configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR))],
-                      [int(match_field[1][0]), int((np.linalg.norm(
-                          (match_field[1][1] - match_field[0][1]) / 2) + match_field[0][
-                                                        1]) + int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR))]])
+
+    # calculate goals
+    goal_middle_y = int((match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]
+
+    goal1 = np.array([[int(match_field[0][0]), goal_middle_y - int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR)],
+                      [int(match_field[0][0] + int(100 * configs.SCALE_FACTOR)),
+                       goal_middle_y + int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR)]])
+
+    goal2 = np.array([[int(match_field[1][0] - int(100 * configs.SCALE_FACTOR)),
+                       goal_middle_y - int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR)],
+                      [int(match_field[1][0]), goal_middle_y + int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR)]])
+
+    # calculate throw in zone
     throw_in_zone = np.array([[int(match_field[0][0] + int(400 * configs.SCALE_FACTOR)), int(match_field[0][1])],
                               [int(match_field[1][0] - int(400 * configs.SCALE_FACTOR)), int(match_field[1][1])]])
 
-    distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / 8
+    # calculate rods
+    number_of_rods = 8
+    warp_reduction = [12, 9, 9, 3, -3, -9, -9, -12]
+    players_rods = []
 
-    players_rods = np.array([[[int(
-        match_field[0][0] + (0.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) + 12),
-        int(match_field[0][1])],
-        [int(match_field[0][0] + (
-                0.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) + 12),
-         int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                1.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) + 9),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 1.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) + 9),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                2.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) + 9),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 2.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) + 9),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                3.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) + 3),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 3.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) + 3),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                4.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) - 3),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 4.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) - 3),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                5.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) - 9),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 5.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) - 9),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                6.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) - 9),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 6.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) - 9),
-          int(match_field[1][1])]],
-        [[int(match_field[0][0] + (
-                7.5 * distance_between_rods - int(16 * configs.SCALE_FACTOR)) - 12),
-          int(match_field[0][1])],
-         [int(match_field[0][0] + (
-                 7.5 * distance_between_rods + int(16 * configs.SCALE_FACTOR)) - 12),
-          int(match_field[1][1])]]])
+    distance_between_rods = (np.linalg.norm(match_field[1][0] - match_field[0][0])) / number_of_rods
+
+    for rod in range(number_of_rods):
+        current_rod = [[int(
+            match_field[0][0] + ((rod + 0.5) * distance_between_rods - int(16 * configs.SCALE_FACTOR)) + warp_reduction[
+                rod]), int(match_field[0][1])],
+                       [int(match_field[0][0] + ((rod + 0.5) * distance_between_rods + int(16 * configs.SCALE_FACTOR)) +
+                            warp_reduction[rod]), int(match_field[1][1])]]
+        players_rods.append(current_rod)
 
     return [match_field, goal1, goal2, throw_in_zone, players_rods]
 
 
 def convert_tracked_hsv_colors(ball_color, team1_color, team2_color):
+    """
+    convert hsv colors to showable rgb colors fot the gui
+    """
     _tracked_ball_color_hsv = np.uint8([[ball_color]])
     _tracked_team1_color_hsv = np.uint8([[team1_color]])
     _tracked_team2_color_hsv = np.uint8([[team2_color]])
@@ -366,19 +326,21 @@ def convert_tracked_hsv_colors(ball_color, team1_color, team2_color):
     _tracked_team1_color_rgb = cv2.cvtColor(_tracked_team1_color_hsv, cv2.COLOR_HSV2RGB)
     _tracked_team2_color_rgb = cv2.cvtColor(_tracked_team2_color_hsv, cv2.COLOR_HSV2RGB)
 
-    gui_ball_color = __rgb2hex(_tracked_ball_color_rgb)
-    gui_team1_color = __rgb2hex(_tracked_team1_color_rgb)
-    gui_team2_color = __rgb2hex(_tracked_team2_color_rgb)
+    gui_ball_color = _rgb2hex(_tracked_ball_color_rgb)
+    gui_team1_color = _rgb2hex(_tracked_team1_color_rgb)
+    gui_team2_color = _rgb2hex(_tracked_team2_color_rgb)
 
     return gui_ball_color, gui_team1_color, gui_team2_color
 
 
-def __rgb2hex(color):
+def _rgb2hex(color):
     return '#%02X%02X%02X' % (color[0][0][0], color[0][0][1], color[0][0][2])
 
 
-def initialize_GUI_layout(FONT):
-
+def initialize_gui_layout(FONT):
+    """
+    define design and properties from gui
+    """
     # layout of the GUI
     sg.theme('Reddit')
 
