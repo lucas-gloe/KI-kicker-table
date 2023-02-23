@@ -11,7 +11,14 @@ import frame_postprocessing
 
 def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
     """
-    worker preproccesses frame by defining objects positions on frame
+    worker handles preproccesssing the frame by defining objects positions on frame
+    Parameters:
+        frame_queue(queue):frames before preprocessing
+        preprocessed_queue(queue): frames after preprocessing
+        user_input(string): break criteria for loop
+        game_config(dict): calibration values for current game
+        game_flags(dict): flag values for current game
+    Returns:
     """
     # resizing frame for speed optimisation
     width = int(1920 * configs.SCALE_FACTOR)
@@ -20,6 +27,7 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
 
     while True:
         frame_id, frame = frame_queue.get()
+        # actual preprocessing
         preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
         preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
         if user_input.value == ord('q'):
@@ -28,6 +36,17 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
 
 
 def _preprocessing_action(frame, game_config, dim, game_flags):
+    """
+    actual preprocessing actions for preproccissing on frame
+    Parameters:
+        frame(np.ndarray):frame for preprocessing
+        game_config(dict): calibration values for current game
+        dim(int): parameter for resizing
+        game_flags(dict): flag values for current game
+    Returns:
+        analysis_results(list): parallel interpretation results
+        resized_frame(np.array): processed resizd frame
+    """
     analysis_results = []
     resized_frame = cv2.resize(frame, dim)
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
@@ -47,7 +66,15 @@ def _preprocessing_action(frame, game_config, dim, game_flags):
 def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_positions, game_flags,
                 current_game_results):
     """
-    worker who sort and do further proccessess on preprocessed data
+    worker who sorts frames by id and do time-related postproccessess on preprocessed data
+    Parameters:
+        preprocessed_queue(queue): frame, frame id and frame results after preprocessing
+        result_queue(queue): frame, frame id and frame results after postprocessing
+        user_input(string): break criteria for loop
+        game_config(dict): calibration values for current game
+        ball_positions(list): time related ball positions
+        game_flags(dict): flag values for current game
+        current_game_results(dict): time related interpretation results for each game
     """
     # get start time
     start_time = None
@@ -155,6 +182,7 @@ if __name__ == '__main__':
     print("Starting...")
 
     print("setting up queues")
+
     # create a queue for frames
     frame_queue = multiprocessing.Queue()
     # create a queue for preprocessed, not sorted frames
@@ -218,12 +246,12 @@ if __name__ == '__main__':
                                                              game_flags))
         preprocessing_worker.start()
     postprocessing_worker = multiprocessing.Process(target=update_game,
-                                                    args=(preprocessed_queue, result_queue, user_input, game_config,
-                                                          ball_positions, game_flags, current_game_results))
+                                                    args=(preprocessed_queue, result_queue, user_input,
+                                                          game_config, game_flags, current_game_results))
     postprocessing_worker.start()
     gui_worker = multiprocessing.Process(target=gui_handle,
                                          args=(window, result_queue, user_input, game_config, total_game_results,
-                                               ball_positions, game_flags, current_game_results))
+                                               game_flags, current_game_results))
     gui_worker.start()
 
     frame_id = 0
@@ -263,5 +291,4 @@ if __name__ == '__main__':
                 frame_queue.put((frame_id, frame))
                 frame_id += 1
             print("main stopped")
-
             break

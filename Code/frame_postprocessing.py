@@ -5,6 +5,12 @@ import numpy as np
 def count_game_score(ball_positions, game_config, current_game_results, game_flags):
     """
     Count game score +1  of a certain team if a goal was shot
+    Parameters:
+        ball_positions(list): time related ball positions
+        game_config(dict): calibration values for current game
+        current_game_results(dict): time related interpretation results for each frame
+        game_flags(dict): flag values for current game
+    Returns:
     """
     if len(ball_positions) > 1 and 0 < ball_positions[-2][0] < game_config['goal1'][1][0] and game_config['goal1'][0][
         1] < ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1] and game_flags[
@@ -43,6 +49,11 @@ def count_game_score(ball_positions, game_config, current_game_results, game_fla
 def detect_ball_reentering(ball_positions, game_config, game_flags):
     """
     Detect if the ball reenters the field in the middle section of the Kicker after a goal was shot
+    Parameters:
+        ball_positions(list): time related ball positions
+        game_config(dict): calibration values for current game
+        game_flags(dict): flag values for current game
+    Returns:
     """
     if game_flags['_goal1_detected'] or game_flags['_goal2_detected']:
         if len(ball_positions) >= 2:
@@ -58,7 +69,12 @@ def detect_ball_reentering(ball_positions, game_config, game_flags):
 
 def reset_game(current_game_results, total_game_results, game_flags):
     """
-    Reset current game results to 0:0
+    Reset current game results to 0:0 and save results into dict
+    Parameters:
+        current_game_results(dict): time related interpretation results for each frame
+        total_game_results(list): time related total game results per game
+        game_flags(dict): flag values for current game
+    Returns:
     """
     if game_flags["new_game"] and game_flags['results']:
         team1 = current_game_results['counter_team1']
@@ -72,6 +88,14 @@ def reset_game(current_game_results, total_game_results, game_flags):
 
 
 def predict_ball(ball_positions, current_game_results):
+    """
+    defining next ball position based on the current position
+    Parameters:
+        ball_positions(list): time related ball positions
+        current_game_results(dict): time related interpretation results for each frame
+    Return:
+        current_ball_position(list): predicted ball position
+    """
     predicted = KalmanFilter().predict(ball_positions[-1][0], ball_positions[-1][1])
     current_game_results["predicted"] = (predicted[0], predicted[1])
     current_ball_position = current_game_results["predicted"]
@@ -89,9 +113,17 @@ class KalmanFilter:
 
     @classmethod
     def predict(cls, coordX, coordY):
+        """
+        actual prediciton of the balls position
+        Parameters:
+            coordX(int): x position of the last known ball position
+            coordY(int): y position of the last known ball position
+        Returns:
+            prediction(tuple): predicted ball position
+        """
         measured = np.array([[np.float32(coordX)], [np.float32(coordY)]])
         cls.kf.correct(measured)
         predicted = cls.kf.predict()
         x, y = int(predicted[0]), int(predicted[1])
-        tuple = (x, y)
-        return tuple
+        prediction = (x, y)
+        return prediction

@@ -7,10 +7,19 @@ import frame_postprocessing
 import frame_rendering
 
 
-def gui_handle(window, result_queue, user_input, game_config, total_game_results, ball_positions, game_flags,
+def gui_handle(window, result_queue, user_input, game_config, total_game_results, game_flags,
                current_game_results):
     """
     update variables and gui related output data
+    Parameters:
+        window(obj): gui window object
+        result_queue(queue): frame, frame id and frame results after postprocessing
+        user_input(string): break criteria for loop
+        game_config(dict): calibration values for current game
+        total_game_results(list): time related total game results per game
+        game_flags(dict): flag values for current game
+        current_game_results(dict): time related interpretation results for each game
+    Returns:
     """
     while True:
         if game_flags['manual_mode']:
@@ -64,15 +73,22 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
                     cv2.imwrite("./calibration_image.JPG", frame)
 
 
-def render_game(frame, results, game_configs, game_flags):
+def render_game(frame, results, game_config, game_flags):
     """
     draw all tracked objects on frame
+    Parameters:
+        frame(np.ndarray):frame from interpretations
+        results(dict): frame results after interpretation
+        game_config(dict): calibration values for current game
+        game_flags(dict): flag values for current game
+    Return:
+        frame(np.ndarray):frame with renderings
     """
     if results is None:
         return frame_rendering.draw_calibration_marker(frame)
     else:
         if game_flags['show_kicker']:
-            frame = frame_rendering.draw_field_calibrations(frame, game_configs)
+            frame = frame_rendering.draw_field_calibrations(frame, game_config)
         if game_flags['show_objects']:
             frame = frame_rendering.draw_ball(frame, results)
             frame = frame_rendering.draw_predicted_ball(frame, results)
@@ -86,6 +102,10 @@ def render_game(frame, results, game_configs, game_flags):
 def check_variables(user_input, game_flags):
     """
     check key bindings for user input
+    Parameters:
+         user_input(string): break criteria for loop
+         game_flags(dict): flag values for current game
+    Returns:
     """
     variables = {
         'c': ('show_kicker', True),
@@ -107,6 +127,17 @@ def check_variables(user_input, game_flags):
 def update_gui(window, game_config, event, total_game_results, current_game_results, current_result, frame, expect_id):
     """
     update values on gui window
+    Parameters:
+        window(obj): gui window object
+        game_config(dict): calibration values for current game
+        event()
+        total_game_results(list): time related total game results per game
+        current_game_results(dict): time related interpretation results for each game
+        current_result(dict): frame results after interpretation
+        frame(np.ndarray):frame with renderings
+        expect_id(int): frame id
+    Returns:
+        window(obj): gui window object
     """
     if expect_id % 2 == 0:
         window["-frame-"].update(data=cv2.imencode('.ppm', frame)[1].tobytes())
