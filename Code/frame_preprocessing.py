@@ -6,6 +6,15 @@ import configs
 def define_players_position(hsv_img, game_config, team_dict_number, team_number):
     """
     create mask for player-colored object and search for contours on that mask
+    Parameters:
+        hsv_img(np.ndarray): HSV colored calibration image
+        game_config(dict): calibration values for current game
+        team_dict_number(string): team keyword in dict
+        team_number(int): team number in field
+    Returns:
+        player_positions(list): list of every players position
+        players_on_field(bool): boolean if players where found on mask
+        ranked(list): list with ranks for every players postions based on their position
     """
     _ranked = []
 
@@ -41,7 +50,12 @@ def define_players_position(hsv_img, game_config, team_dict_number, team_number)
 def _find_objects(mask, team_number, game_config):
     """
     tracking algorithm to find the contours on the masks
-    parts of code related to source : https://www.computervision.zone/courses/learn-opencv-in-3-hours/
+    Parameters:
+        mask(np.ndarray): black-white image of the filtered positions of the objects
+        team_number(int): team number in field
+        game_config(dict): calibration values for current game
+    Returns:
+        objects(list): list of all tracked objects
     """
     # outline the contours on the mask
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -75,6 +89,10 @@ def _find_objects(mask, team_number, game_config):
 def _load_players_names(objects, team_number):
     """
     take the position of alle players of a team and rank them sorted from the position of the field
+    Parameters:
+        objects(list): list of all tracked objects
+    Returns:
+        ranks(list): list with ranks for every players postions based on their position
     """
     if len(objects) > 0:
         position_matrix = np.array(objects)
@@ -91,6 +109,12 @@ def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
     """
     check if a player was detected with more than one bounding box. If so combine these boxes to one big box
     so every player is only detected once
+    Parameters:
+        objects(list): list of all tracked objects
+        team_number(int): team number in field
+        game_config(dict): calibration values for current game
+    Returns:
+        _max_bounding_boxes_team_X: list of all filtered objects
     """
     _max_bounding_boxes = []
 
@@ -138,6 +162,11 @@ def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
 def get_rod(x, game_config):
     """
     check at which rod the detected shape is positioned
+    Parameters:
+        x(int): X coordinate from player
+        game_config(dict): calibration values for current game
+    Returns:
+        i(int): position of rod in dict
     """
     for i, rod in enumerate(game_config['players_rods']):
         if rod[0][0] - configs.RODWIDTH <= x <= rod[1][0] + configs.RODWIDTH:
@@ -148,6 +177,10 @@ def get_rod(x, game_config):
 def __reverse_ranks(ranks):
     """
     Load players ranks for the opposite team, so the counter always starts at the goalkeeper
+    Parameters:
+        ranks(list): list with ranks for every players postions based on their position
+    Returns:
+        reversed_ranks(list): list with ranks for every players postions based on their position
     """
     reversed_ranks = []
 
@@ -161,6 +194,12 @@ def __reverse_ranks(ranks):
 def define_balls_position(hsv_img, game_config, game_flags):
     """
     create mask for ball-colored object and search for contours on that mask
+    Parameters:
+        hsv_img(np.ndarray): HSV colored calibration image
+        game_config(dict): calibration values for current game
+        game_flags(dict): flag values for current game
+    Returns:
+        current_ball_position(list): current position of the ball
     """
     _predicted = (0, 0)
     center_x = 0
@@ -201,26 +240,30 @@ def define_balls_position(hsv_img, game_config, game_flags):
         center_y = int((y + (h / 2)))
 
         # save the current position of the ball into an array
-        _current_ball_position = [center_x, center_y]
+        current_ball_position = [center_x, center_y]
 
         game_flags['ball_was_found'] = True
 
     elif len(objects) == 0:
         print("ball not found")
-        _current_ball_position = [-1, -1]
+        current_ball_position = [-1, -1]
         game_flags['ball_was_found'] = False
     else:
         print("ball not found")
-        _current_ball_position = [-1, -1]
+        current_ball_position = [-1, -1]
         game_flags['ball_was_found'] = False
 
-    return _current_ball_position
+    return current_ball_position
 
 
 def _smooth_mask(mask):
     """
     The mask created inDetectBallPosition might be noisy.
     source: https://www.computervision.zone/courses/learn-opencv-in-3-hours/
+    Parameters:
+        mask(np.ndarray): black-white image of the filtered positions of the objects
+    Returns:
+        mask(np.ndarray): filtered black-white image of the filtered positions of the objects
     """
     KERNELS = 3
     # create the disk-shaped kernel for the following image processing,

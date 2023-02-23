@@ -7,6 +7,9 @@ import configs
 def calibrate_before_first_image():
     """
     initialize the gui to show data output
+    Parameters:
+    Returns:
+        window(obj): gui window object
     """
     window = initialize_gui_layout(configs.FONT)
 
@@ -16,6 +19,10 @@ def calibrate_before_first_image():
 def calibrate(calibration_image, game_config):
     """
     get calibration information of the current game
+    Parameters:
+        calibration_image(np.ndarray): calibration image taken from the foosball
+        game_config(dict): calibration values for current game
+    Returns:
     """
     angle = get_angle(calibration_image)
     center, ratio_pxcm = get_center_scale(calibration_image)
@@ -42,13 +49,15 @@ def calibrate(calibration_image, game_config):
         'gui_team2_color': gui_team2_color
     })
 
-    return game_config
-
 
 def get_angle(calibration_image):
     """
     define angle of table soccer for playground definition
     source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        calibration_image(np.ndarray): calibration image taken from the foosball
+    Returns:
+        angle(int): angle of foosball table rotation
     """
     rgb = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     angle = 0
@@ -97,6 +106,11 @@ def get_center_scale(calibration_image):
     """
     read the center circle of table soccer and compare center size to given camera resolution
     source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        calibration_image(np.ndarray): calibration image taken from the foosball
+    Returns:
+        center(int): center point from foosball table
+        ratio_pxcm(float): ratio of px to cm
     """
     gray = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
@@ -137,6 +151,12 @@ def calc_field(angle, center, ratio_pxcm):
     """
     take calculate arguments to create table soccer playground
     part of code from source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        angle(int): angle of foosball table rotation
+        center(int): center point from foosball table
+        ratio_pxcm(float): ratio of px to cm
+    Returns:
+        field(list): contains all 4 corners from calibrated field with the following sequence: top left, top right, bottom left, bottom right
     """
 
     field = []
@@ -169,6 +189,13 @@ def calibrate_color(calibration_image, center):
     """
     The taken image will be used to read the colors from the defined calibration positions.
     source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        calibration_image(np.ndarray): calibration image taken from the foosball
+        center(int): center point from foosball table
+    Returns:
+        ball_color(tuple): calibrated ball color
+        team1_color(tuple): calibrated team 1 color
+        team2_color(tuple): calibrated team 2 color
     """
 
     calibration_image = cv2.cvtColor(calibration_image, cv2.COLOR_BGR2HSV)
@@ -183,17 +210,21 @@ def calibrate_color(calibration_image, center):
 
     cv2.imwrite("cropped_calibration_img.JPG", cropped_hsv_img)
 
-    ball_color = calibrate_ball_color(cropped_hsv_img)
-    team1_color = calibrate_team_color(cropped_hsv_img, 1)
-    team2_color = calibrate_team_color(cropped_hsv_img, 2)
+    ball_color = _calibrate_ball_color(cropped_hsv_img)
+    team1_color = _calibrate_team_color(cropped_hsv_img, 1)
+    team2_color = _calibrate_team_color(cropped_hsv_img, 2)
 
     return [ball_color, team1_color, team2_color]
 
 
-def calibrate_ball_color(cropped_hsv_img):
+def _calibrate_ball_color(cropped_hsv_img):
     """
     Measures the color around the balls position.
     part of code from source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        cropped_hsv_img(np.ndarray): cropped calibration image taken from calibration image
+    Returns:
+        ball_color(tuple): calibrated ball color
     """
     x_center = int(round(cropped_hsv_img.shape[1] / 2))
     y_center = int(round(cropped_hsv_img.shape[0] / 2))
@@ -225,10 +256,15 @@ def calibrate_ball_color(cropped_hsv_img):
     return ball_color
 
 
-def calibrate_team_color(cropped_hsv_img, team_number):
+def _calibrate_team_color(cropped_hsv_img, team_number):
     """
     Measures the color around the teams positions
     part of code from source: https://github.com/StudentCV/TableSoccerCV
+    Parameters:
+        cropped_hsv_img(np.ndarray): cropped calibration image taken from calibration image
+        team_number(int): number for team for definfing calibration area
+    Returns:
+        team_color(tuple(list)): calibrated teams color
     """
     # Get the exact point for measuring
     x_center = int(round(cropped_hsv_img.shape[1] / 2))
@@ -276,6 +312,14 @@ def calibrate_team_color(cropped_hsv_img, team_number):
 def load_game_field_properties(field):
     """
     calculate the position of the field, the goals, the throw-in-zone and the rods.
+    Parameters:
+        field(list): contains all 4 corners from calibrated field with the following sequence: top left, top right, bottom left, bottom right
+    Returns:
+        match_field(list): contains all 4 corners from calibrated match field with the following sequence: top left, top right, bottom left, bottom right
+        goal1(list): contains all 4 corners from goal1 field with the following sequence: top left, top right, bottom left, bottom right
+        goal2(list): contains all 4 corners from goal2 field with the following sequence: top left, top right, bottom left, bottom right
+        throw_in_zone(list): contains all 4 corners from throw in zone field with the following sequence: top left, top right, bottom left, bottom right
+        players_rods(lst): contains all 4 corners from players rods field with the following sequence: top left, top right, bottom left, bottom right
     """
     # calculate match_field
     match_field = np.array([[int(field[0][0]), int(field[0][1])],
@@ -311,12 +355,20 @@ def load_game_field_properties(field):
                             warp_reduction[rod]), int(match_field[1][1])]]
         players_rods.append(current_rod)
 
-    return [match_field, goal1, goal2, throw_in_zone, players_rods]
+    return match_field, goal1, goal2, throw_in_zone, players_rods
 
 
 def convert_tracked_hsv_colors(ball_color, team1_color, team2_color):
     """
     convert hsv colors to showable rgb colors fot the gui
+    Parameters:
+        ball_color(tuple(list)): calibrated ball color in HSV
+        team1_color(tuple(list)): calibrated team 1 color in HSV
+        team2_color(tuple(list)): calibrated team 2 color in HSV
+    Returns:
+        ball_color(string): calibrated ball color in RGB
+        team1_color(string): calibrated team 1 color in RGB
+        team2_color(string): calibrated team 2 color in RGB
     """
     _tracked_ball_color_hsv = np.uint8([[ball_color]])
     _tracked_team1_color_hsv = np.uint8([[team1_color]])
@@ -334,12 +386,23 @@ def convert_tracked_hsv_colors(ball_color, team1_color, team2_color):
 
 
 def _rgb2hex(color):
+    """
+    converts RGB colors to HEX code
+    Parameters:
+        color(np.array): RGB color value
+    Returns:
+        color(string): HEX color value
+    """
     return '#%02X%02X%02X' % (color[0][0][0], color[0][0][1], color[0][0][2])
 
 
 def initialize_gui_layout(FONT):
     """
     define design and properties from gui
+    Parameters:
+        FONT(string): font value for gui
+    Returns:
+        window(obj): gui window object
     """
     # layout of the GUI
     sg.theme('Reddit')
