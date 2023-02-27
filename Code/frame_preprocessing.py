@@ -114,9 +114,9 @@ def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
         team_number(int): team number in field
         game_config(dict): calibration values for current game
     Returns:
-        _max_bounding_boxes_team_X: list of all filtered objects
+        max_bounding_boxes_team_X: list of all filtered objects
     """
-    _max_bounding_boxes = []
+    max_bounding_boxes = []
 
     for contour in objects:
         y_mid = contour[1] + contour[3] / 2
@@ -126,37 +126,37 @@ def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
         right_corner_x = (contour[0] + contour[2])
         right_corner_y = y_mid + configs.HALF_PLAYERS_WIDTH
         max_box = [[left_corner_x, left_corner_y], [right_corner_x, right_corner_y]]
-        _max_bounding_boxes.append(max_box)
+        max_bounding_boxes.append(max_box)
 
-    np.zeros((len(_max_bounding_boxes), len(_max_bounding_boxes)))
+    np.zeros((len(max_bounding_boxes), len(max_bounding_boxes)))
 
     i = 0
 
-    while i < len(_max_bounding_boxes):
-        for j, max_box2 in enumerate(_max_bounding_boxes[i + 1:]):
-            if (get_rod((_max_bounding_boxes[i][0][0] + (
-                    abs(_max_bounding_boxes[i][0][0] - _max_bounding_boxes[i][1][0]) / 2)), game_config) ==
+    while i < len(max_bounding_boxes):
+        for j, max_box2 in enumerate(max_bounding_boxes[i + 1:]):
+            if (get_rod((max_bounding_boxes[i][0][0] + (
+                    abs(max_bounding_boxes[i][0][0] - max_bounding_boxes[i][1][0]) / 2)), game_config) ==
                     get_rod((max_box2[0][0] + (abs(max_box2[0][0] - max_box2[1][0]) / 2)), game_config) and
-                    (_max_bounding_boxes[i][0][1] <= max_box2[0][1] <= _max_bounding_boxes[i][1][1] or
-                     _max_bounding_boxes[i][0][1] <= max_box2[1][1] <= _max_bounding_boxes[i][1][1])):
-                _max_bounding_boxes[i] = [[min(_max_bounding_boxes[i][0][0], max_box2[0][0]),
-                                           min(_max_bounding_boxes[i][0][1], max_box2[0][1],
-                                               _max_bounding_boxes[i][1][1], max_box2[1][1])],
-                                          [max(_max_bounding_boxes[i][1][0], max_box2[1][0]),
-                                           max(_max_bounding_boxes[i][0][1], max_box2[0][1],
-                                               _max_bounding_boxes[i][1][1], max_box2[1][1])]
+                    (max_bounding_boxes[i][0][1] <= max_box2[0][1] <= max_bounding_boxes[i][1][1] or
+                     max_bounding_boxes[i][0][1] <= max_box2[1][1] <= max_bounding_boxes[i][1][1])):
+                max_bounding_boxes[i] = [[min(max_bounding_boxes[i][0][0], max_box2[0][0]),
+                                           min(max_bounding_boxes[i][0][1], max_box2[0][1],
+                                               max_bounding_boxes[i][1][1], max_box2[1][1])],
+                                          [max(max_bounding_boxes[i][1][0], max_box2[1][0]),
+                                           max(max_bounding_boxes[i][0][1], max_box2[0][1],
+                                               max_bounding_boxes[i][1][1], max_box2[1][1])]
                                           ]
-                _max_bounding_boxes.pop(i + 1 + j)
+                max_bounding_boxes.pop(i + 1 + j)
                 i = i - 1
                 break
         i = i + 1
 
     if team_number == 1:
-        _max_bounding_boxes_team_1 = _max_bounding_boxes
-        return _max_bounding_boxes_team_1
+        max_bounding_boxes_team_1 = max_bounding_boxes
+        return max_bounding_boxes_team_1
     if team_number == 2:
-        _max_bounding_boxes_team_2 = _max_bounding_boxes
-        return _max_bounding_boxes_team_2
+        max_bounding_boxes_team_2 = max_bounding_boxes
+        return max_bounding_boxes_team_2
 
 
 def get_rod(x, game_config):

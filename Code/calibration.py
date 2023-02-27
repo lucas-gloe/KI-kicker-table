@@ -262,7 +262,7 @@ def _calibrate_team_color(cropped_hsv_img, team_number):
     part of code from source: https://github.com/StudentCV/TableSoccerCV
     Parameters:
         cropped_hsv_img(np.ndarray): cropped calibration image taken from calibration image
-        team_number(int): number for team for definfing calibration area
+        team_number(int): number for team for defining calibration area
     Returns:
         team_color(tuple(list)): calibrated teams color
     """
@@ -419,10 +419,10 @@ def initialize_gui_layout(FONT):
 
     game_score_and_speed = [
         [sg.Text('SIT Smart Kicker', text_color='orange', font=(FONT, 30))],
-        [sg.Button('goal+1', key="-manual_game_counter_team_1_up-", button_color='grey', font=(FONT, 8)),
-         sg.Button('goal-1', key="-manual_game_counter_team_1_down-", button_color='grey', font=(FONT, 8)),
-         sg.Button('goal+1', key="-manual_game_counter_team_2_up-", button_color='grey', font=(FONT, 8)),
-         sg.Button('goal-1', key="-manual_game_counter_team_2_down-", button_color='grey', font=(FONT, 8))],
+        [sg.Button('Goal+1', key="-manual_game_counter_team_1_up-", button_color='grey', font=(FONT, 8)),
+         sg.Button('Goal-1', key="-manual_game_counter_team_1_down-", button_color='grey', font=(FONT, 8)),
+         sg.Button('Goal+1', key="-manual_game_counter_team_2_up-", button_color='grey', font=(FONT, 8)),
+         sg.Button('Goal-1', key="-manual_game_counter_team_2_down-", button_color='grey', font=(FONT, 8))],
         [sg.Text("", key='-score_team_1-', font=(FONT, 45)), sg.Text(" : ", font=(FONT, 20)),
          sg.Text("", key='-score_team_2-', font=(FONT, 45))],
         [sg.Text("Team 1", font=(FONT, 15)),

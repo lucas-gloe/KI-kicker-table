@@ -4,7 +4,7 @@ import configs
 
 def draw_field_calibrations(frame, game_config):
     """
-    show football field contour for calibration on frame
+    show foosball field contour for calibration on frame
     Parameters:
         frame(np.ndarray):frame from interpretations
         game_config(dict): calibration values for current game
@@ -80,6 +80,7 @@ def draw_figures(frame, results, team_dict_number, team_dict_flag, team_number, 
         frame(np.ndarray):frame from interpretations
         results(dict): dict with the current game results
         team_dict_number(string): team keyword in dict
+        team_dict_flag(bool): Boolean if team was detected
         team_number(int): team number in field
         team_ranks(list): list with ranks for every players postions based on their position
     Returns:
