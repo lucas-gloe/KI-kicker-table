@@ -114,7 +114,7 @@ class KalmanFilter:
     @classmethod
     def predict(cls, coordX, coordY):
         """
-        actual prediciton of the balls position
+        actual prediction of the balls position
         Parameters:
             coordX(int): x position of the last known ball position
             coordY(int): y position of the last known ball position

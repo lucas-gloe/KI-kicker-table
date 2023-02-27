@@ -11,7 +11,7 @@ import frame_postprocessing
 
 def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
     """
-    worker handles preproccesssing the frame by defining objects positions on frame
+    worker handles preprocessing the frame by defining objects positions on frame
     Parameters:
         frame_queue(queue):frames before preprocessing
         preprocessed_queue(queue): frames after preprocessing
@@ -37,7 +37,7 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
 
 def _preprocessing_action(frame, game_config, dim, game_flags):
     """
-    actual preprocessing actions for preproccissing on frame
+    actual preprocessing actions for preprocessing on frame
     Parameters:
         frame(np.ndarray):frame for preprocessing
         game_config(dict): calibration values for current game
@@ -45,7 +45,7 @@ def _preprocessing_action(frame, game_config, dim, game_flags):
         game_flags(dict): flag values for current game
     Returns:
         analysis_results(list): parallel interpretation results
-        resized_frame(np.array): processed resizd frame
+        resized_frame(np.array): processed resized frame
     """
     analysis_results = []
     resized_frame = cv2.resize(frame, dim)
@@ -66,7 +66,7 @@ def _preprocessing_action(frame, game_config, dim, game_flags):
 def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_positions, game_flags,
                 current_game_results):
     """
-    worker who sorts frames by id and do time-related postproccessess on preprocessed data
+    worker who sorts frames by id and do time-related postprocessess on preprocessed data
     Parameters:
         preprocessed_queue(queue): frame, frame id and frame results after preprocessing
         result_queue(queue): frame, frame id and frame results after postprocessing

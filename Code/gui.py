@@ -130,7 +130,7 @@ def update_gui(window, game_config, event, total_game_results, current_game_resu
     Parameters:
         window(obj): gui window object
         game_config(dict): calibration values for current game
-        event()
+        event(obj): manual event on gui window
         total_game_results(list): time related total game results per game
         current_game_results(dict): time related interpretation results for each game
         current_result(dict): frame results after interpretation
