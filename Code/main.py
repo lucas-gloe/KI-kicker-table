@@ -85,18 +85,24 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
     while True:
         if game_flags['manual_mode']:
             if game_flags['one_iteration']:
+                # get current results from preprocessing
                 frame_id, frame, preprocessing_result = preprocessed_queue.get()
                 if user_input.value == ord('q'):
                     print("Game stopped")
                     break
+                # start time counter for FPS tracker
                 if start_time is None:
                     start_time = time.time()
                     start_time -= 0.001
+                # safe results from preprocessing to dict
                 frame_dict[frame_id] = (frame, preprocessing_result)
+                # take results from dict ordert by id
                 while (expect_id in frame_dict):
                     current_frame, current_preprocessing_result = frame_dict[expect_id]
+                    # calculate FPS
                     fps = expect_id / (time.time() - start_time)
 
+                    # add current results from preprocessing to dict for further processing or passing
                     current_result.update({
                         'fps': fps,
                         'ball_position': current_preprocessing_result[0][0],
@@ -133,18 +139,26 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
                     game_flags['one_iteration'] = False
 
         elif not game_flags['manual_mode']:
+            overall_start = time.time()
+            # get current results from preprocessing
             frame_id, frame, preprocessing_result = preprocessed_queue.get()
+            # stop update game
             if user_input.value == ord('q'):
                 print("Game stopped")
                 break
+            # start FPS tracker
             if start_time is None:
                 start_time = time.time()
                 start_time -= 0.001
+            # safe results from preprocessing to dict
             frame_dict[frame_id] = (frame, preprocessing_result)
+            # take results from dict ordert by id
             while (expect_id in frame_dict):
                 current_frame, current_preprocessing_result = frame_dict[expect_id]
+                # calculate FPS
                 fps = expect_id / (time.time() - start_time)
 
+                # add current results from preprocessing to dict for further processing or passing
                 current_result.update({
                     'fps': fps,
                     'ball_position': current_preprocessing_result[0][0],
@@ -247,7 +261,7 @@ if __name__ == '__main__':
         preprocessing_worker.start()
     postprocessing_worker = multiprocessing.Process(target=update_game,
                                                     args=(preprocessed_queue, result_queue, user_input,
-                                                          game_config, game_flags, current_game_results))
+                                                          game_config, ball_positions, game_flags, current_game_results))
     postprocessing_worker.start()
     gui_worker = multiprocessing.Process(target=gui_handle,
                                          args=(window, result_queue, user_input, game_config, total_game_results,
