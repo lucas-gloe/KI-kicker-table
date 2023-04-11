@@ -275,34 +275,69 @@ if __name__ == '__main__':
     calibrated = False
 
     while True:
-        # read a frame from the camera
-        ret, frame = cap.read()
-        # add the frame to the queue for processing
-        if not calibrated:
-            file_exists = os.path.exists(r"./calibration_image.JPG")
-            if not file_exists:
-                width = int(1920 * configs.SCALE_FACTOR)
-                height = int(1080 * configs.SCALE_FACTOR)
-                dim = (width, height)
-                resized_frame = cv2.resize(frame, dim)
-                print("file not found, set calibration file by pressing S")
-                result_queue.put((resized_frame, None, None))
-            else:
-                print("start calibration")
-                calibration_image = cv2.imread(r"./calibration_image.JPG")
-                calibrate(calibration_image, game_config)
-                print("finished calibration")
-                calibrated = True
+        if game_flags["manual_mode"]:
+            if game_flags["one_iteration"]:
+                # read a frame from the camera
+                ret, frame = cap.read()
+                # add the frame to the queue for processing
+                if not calibrated:
+                    file_exists = os.path.exists(r"./calibration_image.JPG")
+                    if not file_exists:
+                        width = int(1920 * configs.SCALE_FACTOR)
+                        height = int(1080 * configs.SCALE_FACTOR)
+                        dim = (width, height)
+                        resized_frame = cv2.resize(frame, dim)
+                        print("file not found, set calibration file by pressing S")
+                        result_queue.put((resized_frame, None, None))
+                    else:
+                        print("start calibration")
+                        calibration_image = cv2.imread(r"./calibration_image.JPG")
+                        calibrate(calibration_image, game_config)
+                        print("finished calibration")
+                        calibrated = True
 
-        if calibrated:
-            frame_queue.put((frame_id, frame))
-            frame_id += 1
-            if configs.source != 0 or configs.source != 1:
-                cv2.waitKey(1)
+                if calibrated:
+                    frame_queue.put((frame_id, frame))
+                    frame_id += 1
+                    if configs.source != 0 or configs.source != 1:
+                        cv2.waitKey(1)
 
-        if user_input.value == ord('q'):
-            for i in range(num_workers):  # put last frames for workers in queue
+                if user_input.value == ord('q'):
+                    for i in range(num_workers):  # put last frames for workers in queue
+                        frame_queue.put((frame_id, frame))
+                        frame_id += 1
+                    print("main stopped")
+                    break
+                game_flags["one_iteration"] = False
+        elif not game_flags["manual_mode"]:
+            # read a frame from the camera
+            ret, frame = cap.read()
+            # add the frame to the queue for processing
+            if not calibrated:
+                file_exists = os.path.exists(r"./calibration_image.JPG")
+                if not file_exists:
+                    width = int(1920 * configs.SCALE_FACTOR)
+                    height = int(1080 * configs.SCALE_FACTOR)
+                    dim = (width, height)
+                    resized_frame = cv2.resize(frame, dim)
+                    print("file not found, set calibration file by pressing S")
+                    result_queue.put((resized_frame, None, None))
+                else:
+                    print("start calibration")
+                    calibration_image = cv2.imread(r"./calibration_image.JPG")
+                    calibrate(calibration_image, game_config)
+                    print("finished calibration")
+                    calibrated = True
+
+            if calibrated:
                 frame_queue.put((frame_id, frame))
                 frame_id += 1
-            print("main stopped")
-            break
+                if configs.source != 0 or configs.source != 1:
+                    cv2.waitKey(1)
+
+            if user_input.value == ord('q'):
+                for i in range(num_workers):  # put last frames for workers in queue
+                    frame_queue.put((frame_id, frame))
+                    frame_id += 1
+                print("main stopped")
+                break
