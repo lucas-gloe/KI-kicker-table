@@ -159,7 +159,7 @@ def update_gui(window, game_config, event, total_game_results, current_game_resu
         window["-third_last_game_team2-"].update(total_game_results[-3][1])
 
     if os.path.exists("calibration_image.JPG"):
-        window["-config_img-"].update("configuration image saved!")
+        window["-config_img-"].update("Konfigurationsbild gespeichert!")
 
     if event in ["-manual_game_counter_team_1_up-", "-manual_game_counter_team_2_up-"]:
         if event == "-manual_game_counter_team_1_up-":
