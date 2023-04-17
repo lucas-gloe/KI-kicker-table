@@ -1,4 +1,7 @@
 import cv2
+import keyboard
+import os.path
+
 import configs
 
 
@@ -39,7 +42,7 @@ def draw_field_calibrations(frame, game_config):
     return frame
 
 
-def draw_ball(frame, results):
+def _draw_ball(frame, results):
     """
     draw a circle at the balls position and name the Object "ball"
     Parameters:
@@ -57,7 +60,7 @@ def draw_ball(frame, results):
     return frame
 
 
-def draw_predicted_ball(frame, results):
+def _draw_predicted_ball(frame, results):
     """
     draw a circle at the predicted balls position if there is no ball
     detected in the frame and name the Object "ball"
@@ -73,20 +76,20 @@ def draw_predicted_ball(frame, results):
     return frame
 
 
-def draw_figures(frame, results, team_dict_number, team_dict_flag, team_number, team_ranks):
+def _draw_figures(frame, results, team_dict_number, team_dict_name, team_number, team_ranks):
     """
     Draw a rectangle at the players position and name it TeamX
     Parameters:
         frame(np.ndarray):frame from interpretations
         results(dict): dict with the current game results
         team_dict_number(string): team keyword in dict
-        team_dict_flag(bool): Boolean if team was detected
+        team_dict_name(string): key for boolean if team was detected
         team_number(int): team number in field
-        team_ranks(list): list with ranks for every players postions based on their position
+        team_ranks(string): key for list with ranks for every players postions based on their position
     Returns:
         frame(np.ndarray):frame with renderings
     """
-    if results[team_dict_flag]:
+    if results[team_dict_name]:
         for i, player_position in enumerate(results[team_dict_number]):
             cv2.rectangle(frame, (int(player_position[0][0]), int(player_position[0][1])),
                           (int(player_position[1][0]), int(player_position[1][1])),
@@ -113,3 +116,117 @@ def draw_calibration_marker(frame):
     cv2.circle(frame, (int(frame.shape[1] / 2 + int(85 * configs.SCALE_FACTOR)), int(frame.shape[0] / 2)),
                int(18 * configs.SCALE_FACTOR), (30, 144, 255), 1)
     return frame
+
+
+def render_game(frame, results, game_config, game_flags):
+    """
+    draw all tracked objects on frame
+    Parameters:
+        frame(np.ndarray):frame from interpretations
+        results(dict): frame results after interpretation
+        game_config(dict): calibration values for current game
+        game_flags(dict): flag values for current game
+    Return:
+        frame(np.ndarray):frame with renderings
+    """
+    if results is None:
+        return draw_calibration_marker(frame)
+    else:
+        if game_flags['show_kicker']:
+            frame = draw_field_calibrations(frame, game_config)
+        if game_flags['show_objects']:
+            frame = _draw_ball(frame, results)
+            frame = _draw_predicted_ball(frame, results)
+            frame = _draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
+                                                 'ranks_team1')
+            frame = _draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
+                                                 'ranks_team2')
+        return frame
+
+
+def check_variables(user_input, game_flags):
+    """
+    check key bindings for user input
+    Parameters:
+         user_input(string): break criteria for loop
+         game_flags(dict): flag values for current game
+    Returns:
+    """
+    variables = {
+        'c': ('show_kicker', True),
+        'f': ('show_kicker', False),
+        'a': ('show_objects', True),
+        'd': ('show_objects', False),
+        'n': ('new_game', True),
+        'm': ('manual_mode', True),
+        'l': ('manual_mode', False),
+        'k': ('one_iteration', True)
+    }
+    for key, (flag, value) in variables.items():
+        if keyboard.is_pressed(key):
+            user_input.value = ord(key)
+            if user_input.value == ord(key):
+                game_flags[flag] = value
+
+
+def update_gui(window, game_config, event, total_game_results, current_game_results, current_result, frame, expect_id):
+    """
+    update values on gui window
+    Parameters:
+        window(obj): gui window object
+        game_config(dict): calibration values for current game
+        event(obj): manual event on gui window
+        total_game_results(list): time related total game results per game
+        current_game_results(dict): time related interpretation results for each game
+        current_result(dict): frame results after interpretation
+        frame(np.ndarray):frame with renderings
+        expect_id(int): frame id
+    Returns:
+        window(obj): gui window object
+    """
+    if expect_id % 2 == 0:
+        window["-frame-"].update(data=cv2.imencode('.ppm', frame)[1].tobytes())
+
+    window["-team_1-"].update(background_color=game_config['gui_team1_color'])
+    window["-team_2-"].update(background_color=game_config['gui_team2_color'])
+    window["-ball-"].update(background_color=game_config['gui_ball_color'])
+    window["-score_team_1-"].update(current_game_results['counter_team1'])
+    window["-score_team_2-"].update(current_game_results['counter_team2'])
+    window["-fps-"].update(int(current_result['fps']))
+    window["-last_game_team1-"].update(total_game_results[-1][0])
+    window["-last_game_team2-"].update(total_game_results[-1][1])
+
+    if len(total_game_results) > 1:
+        window["-second_last_game_team1-"].update(total_game_results[-2][0])
+        window["-second_last_game_team2-"].update(total_game_results[-2][1])
+    if len(total_game_results) > 2:
+        window["-third_last_game_team1-"].update(total_game_results[-3][0])
+        window["-third_last_game_team2-"].update(total_game_results[-3][1])
+
+    if os.path.exists("calibration_image.JPG"):
+        window["-config_img-"].update("Konfigurationsbild gespeichert!")
+
+    if event in ["-manual_game_counter_team_1_up-", "-manual_game_counter_team_2_up-"]:
+        if event == "-manual_game_counter_team_1_up-":
+            team = "counter_team1"
+        else:
+            team = "counter_team2"
+        current_game_results[team] += 1
+        if team == "counter_team1":
+            window["-score_team_1-"].update(current_game_results[team])
+        else:
+            window["-score_team_2-"].update(current_game_results[team])
+
+    if event in ["-manual_game_counter_team_1_down-", "-manual_game_counter_team_2_down-"]:
+        if event == "-manual_game_counter_team_1_down-":
+            team = "counter_team1"
+        else:
+            team = "counter_team2"
+        if current_game_results[team] > 0:
+            current_game_results[team] -= 1
+        if team == "counter_team1":
+            window["-score_team_1-"].update(current_game_results[team])
+        else:
+            window["-score_team_2-"].update(current_game_results[team])
+
+    return window
