@@ -2,11 +2,13 @@ import cv2
 import multiprocessing
 import time
 import os.path
-from gui import gui_handle
+import keyboard
+
 from calibration import calibrate, calibrate_before_first_image
 import configs
 import frame_preprocessing
 import frame_postprocessing
+import frame_rendering
 
 
 def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, game_flags):
@@ -83,113 +85,122 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
     expect_id = 0
     current_result = {}
     while True:
+        # get current results from preprocessing
+        frame_id, frame, preprocessing_result = preprocessed_queue.get()
+        if user_input.value == ord('q'):
+            print("Game stopped")
+            break
+        # start time counter for FPS tracker
+        if start_time is None:
+            start_time = time.time()
+            start_time -= 0.001
+        # safe results from preprocessing to dict
+        frame_dict[frame_id] = (frame, preprocessing_result)
+        # take results from dict ordert by id
+        while (expect_id in frame_dict):
+            current_frame, current_preprocessing_result = frame_dict[expect_id]
+            # calculate FPS
+            fps = expect_id / (time.time() - start_time)
+
+            # add current results from preprocessing to dict for further processing or passing
+            current_result.update({
+                'fps': fps,
+                'ball_position': current_preprocessing_result[0][0],
+                'team1_positions': current_preprocessing_result[0][1],
+                'team2_positions': current_preprocessing_result[0][2],
+                'team1_on_field': current_preprocessing_result[0][3],
+                'team2_on_field': current_preprocessing_result[0][4],
+                'ranks_team1': current_preprocessing_result[0][5],
+                'ranks_team2': current_preprocessing_result[0][6]
+            })
+
+            if current_result['ball_position'] != [-1, -1]:
+                predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
+                                                                            current_game_results)
+                ball_positions.append(current_result['ball_position'])
+                game_flags["predicted_value_added"] = False
+            if current_result['ball_position'] == [-1, -1]:
+                if not game_flags["predicted_value_added"]:
+                    if predicted_ball_position[0] - 15 < ball_positions[-1][0] < predicted_ball_position[
+                        0] + 15:
+                        ball_positions.append(predicted_ball_position)
+                        current_result["predicted"] = predicted_ball_position
+                        game_flags["predicted_value_added"] = True
+                else:
+                    ball_positions.append(current_result['ball_position'])
+
+            frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
+            frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
+
+            result_queue.put((current_frame, current_result, expect_id))
+            del frame_dict[expect_id]
+            expect_id += 1
+
+
+def gui_handle(window, result_queue, user_input, game_config, total_game_results, game_flags,
+               current_game_results):
+    """
+    update variables and gui related output data
+    Parameters:
+        window(obj): gui window object
+        result_queue(queue): frame, frame id and frame results after postprocessing
+        user_input(string): break criteria for loop
+        game_config(dict): calibration values for current game
+        total_game_results(list): time related total game results per game
+        game_flags(dict): flag values for current game
+        current_game_results(dict): time related interpretation results for each game
+    Returns:
+    """
+    while True:
         if game_flags['manual_mode']:
+            frame_rendering.check_variables(user_input, game_flags)
             if game_flags['one_iteration']:
-                # get current results from preprocessing
-                frame_id, frame, preprocessing_result = preprocessed_queue.get()
-                if user_input.value == ord('q'):
-                    print("Game stopped")
+                frame, current_result, expect_id = result_queue.get()
+                frame_rendering.check_variables(user_input, game_flags)
+                frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
+
+                out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
+
+                event, values = window.read(timeout=1)
+                if current_result is not None:
+                    window = frame_rendering.update_gui(window, game_config, event, total_game_results, current_game_results,
+                                        current_result, out_frame, expect_id)
+                window.Refresh()
+
+                if keyboard.is_pressed("q"):  # quit the program
+                    user_input.value = ord('q')
+                    cv2.destroyAllWindows()
+                    print("Gui stopped")
                     break
-                # start time counter for FPS tracker
-                if start_time is None:
-                    start_time = time.time()
-                    start_time -= 0.001
-                # safe results from preprocessing to dict
-                frame_dict[frame_id] = (frame, preprocessing_result)
-                # take results from dict ordert by id
-                while (expect_id in frame_dict):
-                    current_frame, current_preprocessing_result = frame_dict[expect_id]
-                    # calculate FPS
-                    fps = expect_id / (time.time() - start_time)
 
-                    # add current results from preprocessing to dict for further processing or passing
-                    current_result.update({
-                        'fps': fps,
-                        'ball_position': current_preprocessing_result[0][0],
-                        'team1_positions': current_preprocessing_result[0][1],
-                        'team2_positions': current_preprocessing_result[0][2],
-                        'team1_on_field': current_preprocessing_result[0][3],
-                        'team2_on_field': current_preprocessing_result[0][4],
-                        'ranks_team1': current_preprocessing_result[0][5],
-                        'ranks_team2': current_preprocessing_result[0][6]
-                    })
+                if keyboard.is_pressed("s"):  # safe configuration image
+                    cv2.imwrite("./calibration_image.JPG", frame)
 
-                    if current_result['ball_position'] != [-1, -1]:
-                        predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
-                                                                                    current_game_results)
-                        ball_positions.append(current_result['ball_position'])
-                        game_flags["predicted_value_added"] = False
-                    if current_result['ball_position'] == [-1, -1]:
-                        if not game_flags["predicted_value_added"]:
-                            if predicted_ball_position[0] - 15 < ball_positions[-1][0] < predicted_ball_position[
-                                0] + 15:
-                                ball_positions.append(predicted_ball_position)
-                                current_result["predicted"] = predicted_ball_position
-                                game_flags["predicted_value_added"] = True
-                        else:
-                            ball_positions.append(current_result['ball_position'])
-
-                    frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
-                    frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
-
-                    result_queue.put((current_frame, current_result, expect_id))
-                    del frame_dict[expect_id]
-                    expect_id += 1
-
-                    game_flags['one_iteration'] = False
+                game_flags['one_iteration'] = False
 
         elif not game_flags['manual_mode']:
-            overall_start = time.time()
-            # get current results from preprocessing
-            frame_id, frame, preprocessing_result = preprocessed_queue.get()
-            # stop update game
-            if user_input.value == ord('q'):
-                print("Game stopped")
+            frame, current_result, expect_id = result_queue.get()
+            frame_rendering.check_variables(user_input, game_flags)
+            frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
+
+            out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
+
+            event, values = window.read(timeout=1)
+
+            if current_result is not None:
+                window = frame_rendering.update_gui(window, game_config, event, total_game_results, current_game_results,
+                                    current_result, out_frame, expect_id)
+            window.Refresh()
+
+            if keyboard.is_pressed("q"):  # quit the program
+                user_input.value = ord('q')
+                cv2.destroyAllWindows()
+                print("Gui stopped")
                 break
-            # start FPS tracker
-            if start_time is None:
-                start_time = time.time()
-                start_time -= 0.001
-            # safe results from preprocessing to dict
-            frame_dict[frame_id] = (frame, preprocessing_result)
-            # take results from dict ordert by id
-            while (expect_id in frame_dict):
-                current_frame, current_preprocessing_result = frame_dict[expect_id]
-                # calculate FPS
-                fps = expect_id / (time.time() - start_time)
 
-                # add current results from preprocessing to dict for further processing or passing
-                current_result.update({
-                    'fps': fps,
-                    'ball_position': current_preprocessing_result[0][0],
-                    'team1_positions': current_preprocessing_result[0][1],
-                    'team2_positions': current_preprocessing_result[0][2],
-                    'team1_on_field': current_preprocessing_result[0][3],
-                    'team2_on_field': current_preprocessing_result[0][4],
-                    'ranks_team1': current_preprocessing_result[0][5],
-                    'ranks_team2': current_preprocessing_result[0][6]
-                })
-
-                if current_result['ball_position'] != [-1, -1]:
-                    predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
-                                                                                current_game_results)
-                    ball_positions.append(current_result['ball_position'])
-                    game_flags["predicted_value_added"] = False
-                if current_result['ball_position'] == [-1, -1]:
-                    if not game_flags["predicted_value_added"]:
-                        if predicted_ball_position[0] - 15 < ball_positions[-1][0] < predicted_ball_position[0] + 15:
-                            ball_positions.append(predicted_ball_position)
-                            current_result["predicted"] = predicted_ball_position
-                            game_flags["predicted_value_added"] = True
-                    else:
-                        ball_positions.append(current_result['ball_position'])
-
-                frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
-                frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
-
-                result_queue.put((current_frame, current_result, expect_id))
-                del frame_dict[expect_id]
-                expect_id += 1
+            if keyboard.is_pressed("s"):  # safe configuration image
+                if not os.path.exists(r"./calibration_image.JPG"):
+                    cv2.imwrite("./calibration_image.JPG", frame)
 
 
 if __name__ == '__main__':
@@ -232,7 +243,7 @@ if __name__ == '__main__':
         'predicted_value_added': False,
         'ball_was_found': False,
         "goalInCurrentFrame": False,
-        'one_iteration': True
+        'one_iteration': True,
     })
 
     manager5 = multiprocessing.Manager()
