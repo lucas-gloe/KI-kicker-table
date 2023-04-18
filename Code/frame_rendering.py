@@ -169,7 +169,24 @@ def check_variables(user_input, game_flags):
                 game_flags[flag] = value
 
 
-def update_gui(window, game_config, event, total_game_results, current_game_results, current_result, frame, expect_id):
+def check_gui_events(event, current_game_results):
+    if event in ["-manual_game_counter_team_1_up-", "-manual_game_counter_team_2_up-"]:
+        if event == "-manual_game_counter_team_1_up-":
+            team = "counter_team1"
+        else:
+            team = "counter_team2"
+        current_game_results[team] += 1
+
+    if event in ["-manual_game_counter_team_1_down-", "-manual_game_counter_team_2_down-"]:
+        if event == "-manual_game_counter_team_1_down-":
+            team = "counter_team1"
+        else:
+            team = "counter_team2"
+        if current_game_results[team] > 0:
+            current_game_results[team] -= 1
+
+
+def update_gui(window, game_config, event, total_game_results, current_game_results, current_result, render_results, expect_id):
     """
     update values on gui window
     Parameters:
@@ -179,13 +196,13 @@ def update_gui(window, game_config, event, total_game_results, current_game_resu
         total_game_results(list): time related total game results per game
         current_game_results(dict): time related interpretation results for each game
         current_result(dict): frame results after interpretation
-        frame(np.ndarray):frame with renderings
+        render_results(dict): dictionary with rendering results
         expect_id(int): frame id
     Returns:
         window(obj): gui window object
     """
-    if expect_id % 2 == 0:
-        window["-frame-"].update(data=cv2.imencode('.ppm', frame)[1].tobytes())
+    if expect_id % 4 == 0:
+        window["-frame-"].update(data=cv2.imencode('.ppm', render_results["frame"])[1].tobytes())
 
     window["-team_1-"].update(background_color=game_config['gui_team1_color'])
     window["-team_2-"].update(background_color=game_config['gui_team2_color'])
@@ -206,27 +223,6 @@ def update_gui(window, game_config, event, total_game_results, current_game_resu
     if os.path.exists("calibration_image.JPG"):
         window["-config_img-"].update("Konfigurationsbild gespeichert!")
 
-    if event in ["-manual_game_counter_team_1_up-", "-manual_game_counter_team_2_up-"]:
-        if event == "-manual_game_counter_team_1_up-":
-            team = "counter_team1"
-        else:
-            team = "counter_team2"
-        current_game_results[team] += 1
-        if team == "counter_team1":
-            window["-score_team_1-"].update(current_game_results[team])
-        else:
-            window["-score_team_2-"].update(current_game_results[team])
-
-    if event in ["-manual_game_counter_team_1_down-", "-manual_game_counter_team_2_down-"]:
-        if event == "-manual_game_counter_team_1_down-":
-            team = "counter_team1"
-        else:
-            team = "counter_team2"
-        if current_game_results[team] > 0:
-            current_game_results[team] -= 1
-        if team == "counter_team1":
-            window["-score_team_1-"].update(current_game_results[team])
-        else:
-            window["-score_team_2-"].update(current_game_results[team])
+    check_gui_events(event, current_game_results)
 
     return window

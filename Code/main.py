@@ -3,6 +3,7 @@ import multiprocessing
 import time
 import os.path
 import keyboard
+import queue
 
 from calibration import calibrate, calibrate_before_first_image
 import configs
@@ -28,13 +29,25 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
     dim = (width, height)
 
     while True:
-        frame_id, frame = frame_queue.get()
-        # actual preprocessing
-        preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
-        preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
-        if user_input.value == ord('q'):
-            print("Worker stopped")
-            break
+        if not game_flags["manual_mode"]:
+            frame_id, frame = frame_queue.get()
+            # actual preprocessing
+            preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
+            preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
+            if user_input.value == ord('q'):
+                print("Worker stopped")
+                break
+
+        if game_flags["manual_mode"]:
+            if game_flags["one_iteration"]:
+                frame_id, frame = frame_queue.get()
+                # actual preprocessing
+                preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
+                preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
+                if user_input.value == ord('q'):
+                    print("Worker stopped")
+                    break
+                game_flags["one_iteration"] = False
 
 
 def _preprocessing_action(frame, game_config, dim, game_flags):
@@ -151,46 +164,31 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
         current_game_results(dict): time related interpretation results for each game
     Returns:
     """
+    render_results = {
+        "frame": None
+    }
+
     while True:
-        if game_flags['manual_mode']:
             frame_rendering.check_variables(user_input, game_flags)
-            if game_flags['one_iteration']:
+            event, values = window.read(timeout=1)
+            frame_rendering.check_gui_events(event, current_game_results)
+
+            frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
+
+            if result_queue.qsize()>=1:
                 frame, current_result, expect_id = result_queue.get()
-                frame_rendering.check_variables(user_input, game_flags)
-                frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
 
                 out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
+
+                render_results.update({
+                    "frame": out_frame
+                })
 
                 event, values = window.read(timeout=1)
                 if current_result is not None:
                     window = frame_rendering.update_gui(window, game_config, event, total_game_results, current_game_results,
-                                        current_result, out_frame, expect_id)
-                window.Refresh()
-
-                if keyboard.is_pressed("q"):  # quit the program
-                    user_input.value = ord('q')
-                    cv2.destroyAllWindows()
-                    print("Gui stopped")
-                    break
-
-                if keyboard.is_pressed("s"):  # safe configuration image
-                    cv2.imwrite("./calibration_image.JPG", frame)
-
-                game_flags['one_iteration'] = False
-
-        elif not game_flags['manual_mode']:
-            frame, current_result, expect_id = result_queue.get()
-            frame_rendering.check_variables(user_input, game_flags)
-            frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
-
-            out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
-
-            event, values = window.read(timeout=1)
-
-            if current_result is not None:
-                window = frame_rendering.update_gui(window, game_config, event, total_game_results, current_game_results,
-                                    current_result, out_frame, expect_id)
-            window.Refresh()
+                                    current_result, render_results, expect_id)
+                    window.Refresh()
 
             if keyboard.is_pressed("q"):  # quit the program
                 user_input.value = ord('q')
@@ -199,8 +197,9 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
                 break
 
             if keyboard.is_pressed("s"):  # safe configuration image
-                if not os.path.exists(r"./calibration_image.JPG"):
-                    cv2.imwrite("./calibration_image.JPG", frame)
+                cv2.imwrite("./calibration_image.JPG", frame)
+
+            print(result_queue.qsize())
 
 
 if __name__ == '__main__':
@@ -286,69 +285,34 @@ if __name__ == '__main__':
     calibrated = False
 
     while True:
-        if game_flags["manual_mode"]:
-            if game_flags["one_iteration"]:
-                # read a frame from the camera
-                ret, frame = cap.read()
-                # add the frame to the queue for processing
-                if not calibrated:
-                    file_exists = os.path.exists(r"./calibration_image.JPG")
-                    if not file_exists:
-                        width = int(1920 * configs.SCALE_FACTOR)
-                        height = int(1080 * configs.SCALE_FACTOR)
-                        dim = (width, height)
-                        resized_frame = cv2.resize(frame, dim)
-                        print("file not found, set calibration file by pressing S")
-                        result_queue.put((resized_frame, None, None))
-                    else:
-                        print("start calibration")
-                        calibration_image = cv2.imread(r"./calibration_image.JPG")
-                        calibrate(calibration_image, game_config)
-                        print("finished calibration")
-                        calibrated = True
+        # read a frame from the camera
+        ret, frame = cap.read()
+        # add the frame to the queue for processing
+        if not calibrated:
+            file_exists = os.path.exists(r"./calibration_image.JPG")
+            if not file_exists:
+                width = int(1920 * configs.SCALE_FACTOR)
+                height = int(1080 * configs.SCALE_FACTOR)
+                dim = (width, height)
+                resized_frame = cv2.resize(frame, dim)
+                print("file not found, set calibration file by pressing S")
+                result_queue.put((resized_frame, None, None))
+            else:
+                print("start calibration")
+                calibration_image = cv2.imread(r"./calibration_image.JPG")
+                calibrate(calibration_image, game_config)
+                print("finished calibration")
+                calibrated = True
 
-                if calibrated:
-                    frame_queue.put((frame_id, frame))
-                    frame_id += 1
-                    if configs.source != 0 or configs.source != 1:
-                        cv2.waitKey(1)
+        if calibrated:
+            frame_queue.put((frame_id, frame))
+            frame_id += 1
+            if configs.source != 0 or configs.source != 1:
+                cv2.waitKey(1)
 
-                if user_input.value == ord('q'):
-                    for i in range(num_workers):  # put last frames for workers in queue
-                        frame_queue.put((frame_id, frame))
-                        frame_id += 1
-                    print("main stopped")
-                    break
-                game_flags["one_iteration"] = False
-        elif not game_flags["manual_mode"]:
-            # read a frame from the camera
-            ret, frame = cap.read()
-            # add the frame to the queue for processing
-            if not calibrated:
-                file_exists = os.path.exists(r"./calibration_image.JPG")
-                if not file_exists:
-                    width = int(1920 * configs.SCALE_FACTOR)
-                    height = int(1080 * configs.SCALE_FACTOR)
-                    dim = (width, height)
-                    resized_frame = cv2.resize(frame, dim)
-                    print("file not found, set calibration file by pressing S")
-                    result_queue.put((resized_frame, None, None))
-                else:
-                    print("start calibration")
-                    calibration_image = cv2.imread(r"./calibration_image.JPG")
-                    calibrate(calibration_image, game_config)
-                    print("finished calibration")
-                    calibrated = True
-
-            if calibrated:
+        if user_input.value == ord('q'):
+            for i in range(num_workers):  # put last frames for workers in queue
                 frame_queue.put((frame_id, frame))
                 frame_id += 1
-                if configs.source != 0 or configs.source != 1:
-                    cv2.waitKey(1)
-
-            if user_input.value == ord('q'):
-                for i in range(num_workers):  # put last frames for workers in queue
-                    frame_queue.put((frame_id, frame))
-                    frame_id += 1
-                print("main stopped")
-                break
+            print("main stopped")
+            break
