@@ -12,33 +12,41 @@ def count_game_score(ball_positions, game_config, current_game_results, game_fla
         game_flags(dict): flag values for current game
     Returns:
     """
+    # check if all requirements for goal shoot are true
     if len(ball_positions) > 1 and 0 < ball_positions[-2][0] < game_config['goal1'][1][0] and game_config['goal1'][0][
         1] < ball_positions[-2][1] < game_config['goal1'][1][1] and ball_positions[-1] == [-1, -1] and game_flags[
         '_ball_reenters_game']:
+        # activate goal count update
         game_flags.update({
             '_goal1_detected': True,
             'goalInCurrentFrame': True
         })
 
+    # check if all requirements for goal shoot are true
     if len(ball_positions) > 1 and game_config['goal2'][0][0] < ball_positions[-2][0] < game_config['goal2'][1][0] and \
             game_config['goal2'][0][1] < \
             ball_positions[-2][1] < game_config['goal2'][1][1] and ball_positions[-1] == [-1, -1] and game_flags[
         '_ball_reenters_game']:
+        # activate goal count update
         game_flags.update({
             '_goal2_detected': True,
             'goalInCurrentFrame': True
         })
 
+    # update goal shoot counter
     if game_flags['_goal1_detected'] and game_flags['goalInCurrentFrame']:
         current_game_results['counter_team1'] += 1
+        # deactivate goal count update
         game_flags.update({
             'goalInCurrentFrame': False,
             '_ball_reenters_game': False,
             'recreate_shoot': True
         })
 
+    # update goal shoot counter
     if game_flags['_goal2_detected'] and game_flags['goalInCurrentFrame']:
         current_game_results['counter_team2'] += 1
+        # deactivate goal count update
         game_flags.update({
             'goalInCurrentFrame': False,
             '_ball_reenters_game': False,
@@ -56,6 +64,7 @@ def detect_ball_reentering(ball_positions, game_config, game_flags):
     Returns:
     """
     if game_flags['_goal1_detected'] or game_flags['_goal2_detected']:
+        # update var for goal counting and statistics at balls reentering
         if len(ball_positions) >= 2:
             if game_config['throw_in_zone'][0][0] < ball_positions[-1][0] < game_config['throw_in_zone'][1][0] and \
                     ball_positions[-2] == [-1, -1]:
@@ -96,6 +105,7 @@ def predict_ball(ball_positions, current_game_results):
     Return:
         current_ball_position(list): predicted ball position
     """
+    # read predicted value from KalmanFilter to save it as the ball position
     predicted = KalmanFilter().predict(ball_positions[-1][0], ball_positions[-1][1])
     current_game_results["predicted"] = (predicted[0], predicted[1])
     current_ball_position = current_game_results["predicted"]
@@ -104,7 +114,7 @@ def predict_ball(ball_positions, current_game_results):
 
 class KalmanFilter:
     """
-    Load the kalman filter for predicition purposess and use it to predict the next position of the ball
+    Load the kalman filter for prediction purposes and use it to predict the next position of the ball
     Source: VisualComputer, https://www.youtube.com/watch?v=67jwpv49ymA
     """
     kf = cv2.KalmanFilter(4, 2)

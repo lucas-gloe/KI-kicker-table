@@ -5,7 +5,7 @@ import os.path
 import keyboard
 import queue
 
-from calibration import calibrate, calibrate_before_first_image
+import calibration
 import configs
 import frame_preprocessing
 import frame_postprocessing
@@ -30,9 +30,11 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
 
     while True:
         if not game_flags["manual_mode"]:
+            # get frame and frame id from first queue
             frame_id, frame = frame_queue.get()
             # actual preprocessing
             preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
+            # put frame with preprocessing results back on second queue
             preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
             if user_input.value == ord('q'):
                 print("Worker stopped")
@@ -43,6 +45,7 @@ def preprocess_frame(frame_queue, preprocessed_queue, user_input, game_config, g
                 frame_id, frame = frame_queue.get()
                 # actual preprocessing
                 preprocessing_result, resized_frame = _preprocessing_action(frame, game_config, dim, game_flags)
+                # put frame with preprocessing results back on second queue
                 preprocessed_queue.put((frame_id, resized_frame, preprocessing_result))
                 if user_input.value == ord('q'):
                     print("Worker stopped")
@@ -56,16 +59,21 @@ def _preprocessing_action(frame, game_config, dim, game_flags):
     Parameters:
         frame(np.ndarray):frame for preprocessing
         game_config(dict): calibration values for current game
-        dim(int): parameter for resizing
+        dim(tuple): parameter for resizing
         game_flags(dict): flag values for current game
     Returns:
         analysis_results(list): parallel interpretation results
         resized_frame(np.array): processed resized frame
     """
+    # create dict so save results
     analysis_results = []
+    # resizing frame for speed optimisation
     resized_frame = cv2.resize(frame, dim)
+    # convert color schema of frame
     hsv_img = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
+    # detect bal position on frame
     ball_position = frame_preprocessing.define_balls_position(hsv_img, game_config, game_flags)
+    # detect teams position on frame
     team_1_positions, team1_on_field, ranks_team1 = frame_preprocessing.define_players_position(hsv_img,
                                                                                                 game_config,
                                                                                                 "team1_color", 1)
@@ -73,6 +81,7 @@ def _preprocessing_action(frame, game_config, dim, game_flags):
     team_2_positions, team2_on_field, ranks_team2 = frame_preprocessing.define_players_position(hsv_img,
                                                                                                 game_config,
                                                                                                 "team2_color", 2)
+    # put results in dict
     analysis_results.append(
         (ball_position, team_1_positions, team_2_positions, team1_on_field, team2_on_field, ranks_team1, ranks_team2))
     return analysis_results, resized_frame
@@ -126,7 +135,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
                 'ranks_team1': current_preprocessing_result[0][5],
                 'ranks_team2': current_preprocessing_result[0][6]
             })
-
+            # calculate ball prediction
             if current_result['ball_position'] != [-1, -1]:
                 predicted_ball_position = frame_postprocessing.predict_ball(ball_positions,
                                                                             current_game_results)
@@ -141,10 +150,10 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
                         game_flags["predicted_value_added"] = True
                 else:
                     ball_positions.append(current_result['ball_position'])
-
+            # calculate first analytic features
             frame_postprocessing.count_game_score(ball_positions, game_config, current_game_results, game_flags)
             frame_postprocessing.detect_ball_reentering(ball_positions, game_config, game_flags)
-
+            # put final results from postprocessing in queue for gui
             result_queue.put((current_frame, current_result, expect_id))
             del frame_dict[expect_id]
             expect_id += 1
@@ -169,37 +178,40 @@ def gui_handle(window, result_queue, user_input, game_config, total_game_results
     }
 
     while True:
-            frame_rendering.check_variables(user_input, game_flags)
-            event, values = window.read(timeout=1)
-            frame_rendering.check_gui_events(event, current_game_results)
+        # check events on gui such as key bindings and buttons
+        frame_rendering.check_variables(user_input, game_flags)
+        event, values = window.read(timeout=1)
+        frame_rendering.check_gui_events(event, current_game_results)
 
-            frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
+        # reset game values if necessary
+        frame_postprocessing.reset_game(current_game_results, total_game_results, game_flags)
 
-            if result_queue.qsize()>=1:
-                frame, current_result, expect_id = result_queue.get()
+        # update gui if  a frame from postprocessing is there
+        if result_queue.qsize()>=1:
+            # take frame and frame results for rendering
+            frame, current_result, expect_id = result_queue.get()
+            # render kicker game interpretations such as player and ball position
+            out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
 
-                out_frame = frame_rendering.render_game(frame, current_result, game_config, game_flags)
+            render_results.update({
+                "frame": out_frame
+            })
 
-                render_results.update({
-                    "frame": out_frame
-                })
+            if current_result is not None:
+                # update all values on gui
+                window = frame_rendering.update_gui(window, game_config, total_game_results, current_game_results,
+                                current_result, render_results, expect_id)
 
-                event, values = window.read(timeout=1)
-                if current_result is not None:
-                    window = frame_rendering.update_gui(window, game_config, event, total_game_results, current_game_results,
-                                    current_result, render_results, expect_id)
-                    window.Refresh()
+        window.Refresh()
 
-            if keyboard.is_pressed("q"):  # quit the program
-                user_input.value = ord('q')
-                cv2.destroyAllWindows()
-                print("Gui stopped")
-                break
+        if keyboard.is_pressed("q"):  # quit the program
+            user_input.value = ord('q')
+            cv2.destroyAllWindows()
+            print("Gui stopped")
+            break
 
-            if keyboard.is_pressed("s"):  # safe configuration image
-                cv2.imwrite("./calibration_image.JPG", frame)
-
-            print(result_queue.qsize())
+        if keyboard.is_pressed("s"):  # safe configuration image
+            cv2.imwrite("./calibration_image.JPG", frame)
 
 
 if __name__ == '__main__':
@@ -214,6 +226,7 @@ if __name__ == '__main__':
     # create a queue for finished processed and sorted frames
     result_queue = multiprocessing.Queue()
 
+    # creating all shared memory's
     print("setting up shared memory inputs")
     user_input = multiprocessing.Value('i', ord('A'))
 
@@ -252,8 +265,9 @@ if __name__ == '__main__':
         'counter_team2': 0
     })
 
+    # initialize  gui
     print("initialize GUI")
-    window = calibrate_before_first_image()
+    window = calibration.calibrate_before_first_image()
 
     print("Start Video Capture")
     cap = cv2.VideoCapture(configs.source)  # open camera/videostream
@@ -285,34 +299,80 @@ if __name__ == '__main__':
     calibrated = False
 
     while True:
-        # read a frame from the camera
-        ret, frame = cap.read()
-        # add the frame to the queue for processing
-        if not calibrated:
-            file_exists = os.path.exists(r"./calibration_image.JPG")
-            if not file_exists:
-                width = int(1920 * configs.SCALE_FACTOR)
-                height = int(1080 * configs.SCALE_FACTOR)
-                dim = (width, height)
-                resized_frame = cv2.resize(frame, dim)
-                print("file not found, set calibration file by pressing S")
-                result_queue.put((resized_frame, None, None))
-            else:
-                print("start calibration")
-                calibration_image = cv2.imread(r"./calibration_image.JPG")
-                calibrate(calibration_image, game_config)
-                print("finished calibration")
-                calibrated = True
+        # check for manual mode
+        if game_flags["manual_mode"]:
+            if game_flags["one_iteration"]:
+                # read a frame from the camera
+                ret, frame = cap.read()
+                # add the frame to the queue for processing
+                # calibrate all relevant information from table soccer
+                if not calibrated:
+                    file_exists = os.path.exists(r"./calibration_image.JPG")
+                    if not file_exists:
+                        # resize frame
+                        width = int(1920 * configs.SCALE_FACTOR)
+                        height = int(1080 * configs.SCALE_FACTOR)
+                        dim = (width, height)
+                        resized_frame = cv2.resize(frame, dim)
+                        print("file not found, set calibration file by pressing S")
+                        # put frame direct into gui queue
+                        result_queue.put((resized_frame, None, None))
+                    else:
+                        print("start calibration")
+                        calibration_image = cv2.imread(r"./calibration_image.JPG")
+                        # calibrate game properties if a calibration image exist
+                        calibration.calibrate(calibration_image, game_config)
+                        print("finished calibration")
+                        calibrated = True
 
-        if calibrated:
-            frame_queue.put((frame_id, frame))
-            frame_id += 1
-            if configs.source != 0 or configs.source != 1:
-                cv2.waitKey(1)
+                if calibrated:
+                    # put frame in preprocessing queue
+                    frame_queue.put((frame_id, frame))
+                    frame_id += 1
+                    # wait or new imageinput to prevent data jam
+                    if configs.source != 0 or configs.source != 1:
+                        cv2.waitKey(1)
 
-        if user_input.value == ord('q'):
-            for i in range(num_workers):  # put last frames for workers in queue
+                if user_input.value == ord('q'):
+                    for i in range(num_workers):  # put last frames for workers in queue
+                        frame_queue.put((frame_id, frame))
+                        frame_id += 1
+                    print("main stopped")
+                    break
+        if not game_flags["manual_mode"]:
+            # read a frame from the camera
+            ret, frame = cap.read()
+            # add the frame to the queue for processing
+            # calibrate all relevant information from table soccer
+            if not calibrated:
+                file_exists = os.path.exists(r"./calibration_image.JPG")
+                if not file_exists:
+                    # resize frame
+                    width = int(1920 * configs.SCALE_FACTOR)
+                    height = int(1080 * configs.SCALE_FACTOR)
+                    dim = (width, height)
+                    resized_frame = cv2.resize(frame, dim)
+                    print("file not found, set calibration file by pressing S")
+                    # put frame direct into gui queue
+                    result_queue.put((resized_frame, None, None))
+                else:
+                    print("start calibration")
+                    calibration_image = cv2.imread(r"./calibration_image.JPG")
+                    # calibrate game properties if a calibration image exist
+                    calibration.calibrate(calibration_image, game_config)
+                    print("finished calibration")
+                    calibrated = True
+
+            if calibrated:
                 frame_queue.put((frame_id, frame))
                 frame_id += 1
-            print("main stopped")
-            break
+                # wait or new imageinput to prevent data jam
+                if configs.source != 0 or configs.source != 1:
+                    cv2.waitKey(1)
+
+            if user_input.value == ord('q'):
+                for i in range(num_workers):  # put last frames for workers in queue
+                    frame_queue.put((frame_id, frame))
+                    frame_id += 1
+                print("main stopped")
+                break

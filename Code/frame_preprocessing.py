@@ -17,7 +17,7 @@ def define_players_position(hsv_img, game_config, team_dict_number, team_number)
         ranked(list): list with ranks for every players postions based on their position
     """
     _ranked = []
-
+    # read colors
     team_color = game_config[team_dict_number]
     lower_color = np.asarray(team_color)
     upper_color = np.asarray(team_color)
@@ -31,8 +31,10 @@ def define_players_position(hsv_img, game_config, team_dict_number, team_number)
     lower_color = np.array(lower_color)
     upper_color = np.array(upper_color)
 
+    # create mask on frame based on the upper and lower border from calibrated colors
     players_mask = cv2.inRange(hsv_img, lower_color, upper_color)
 
+    # find objects on calibrated mask
     objects = _find_objects(players_mask, team_number, game_config)
 
     if len(objects) >= 1:
@@ -73,6 +75,7 @@ def _find_objects(mask, team_number, game_config):
 
     objects = np.array(objects)
 
+    # compare tracked objects to match field to prevent wrong detection of outer scope objects
     if len(objects) >= 1:
         objects = np.delete(objects, np.where(
             ((game_config['match_field'][0][0] > objects[:, 0]) | (
@@ -80,6 +83,7 @@ def _find_objects(mask, team_number, game_config):
                     (game_config['match_field'][0][1] > objects[:, 1]) | (
                     objects[:, 1] > game_config['match_field'][1][1]))), axis=0)
 
+    # recalculate bounding boxes of players if a player is tracked twice
     if team_number == 1 or team_number == 2:
         objects = _remove_overlapping_bounding_boxes(objects, team_number, game_config)
 
@@ -95,11 +99,17 @@ def _load_players_names(objects, team_number):
         ranks(list): list with ranks for every players postions based on their position
     """
     if len(objects) > 0:
+        # take players positions
         position_matrix = np.array(objects)
+        # put weight on players coords
         valued_matrix = position_matrix[:, 0, 0] * 10 + position_matrix[:, 0, 1]
+        # sort players position after weighting
         sorted_valued_matrix = valued_matrix.argsort()
+        # create empty array
         ranks = np.empty_like(sorted_valued_matrix)
+        # fill array with evenly spaced values based on the number of tracked objects
         ranks[sorted_valued_matrix] = np.arange(len(valued_matrix))
+        # reverse ranks for one team because of the opposite play direction
         if team_number == 1:
             ranks = __reverse_ranks(ranks)
         return ranks
@@ -110,14 +120,14 @@ def _remove_overlapping_bounding_boxes(objects, team_number, game_config):
     check if a player was detected with more than one bounding box. If so combine these boxes to one big box
     so every player is only detected once
     Parameters:
-        objects(list): list of all tracked objects
+        objects(np.array): list of all tracked objects
         team_number(int): team number in field
         game_config(dict): calibration values for current game
     Returns:
         max_bounding_boxes_team_X: list of all filtered objects
     """
     max_bounding_boxes = []
-
+    # loop over every bounding box to check if two or more bounding boxes belong to the same player
     for contour in objects:
         y_mid = contour[1] + contour[3] / 2
 
@@ -168,6 +178,7 @@ def get_rod(x, game_config):
     Returns:
         i(int): position of rod in dict
     """
+    # loop over every rod to compare x values of rod with given x value
     for i, rod in enumerate(game_config['players_rods']):
         if rod[0][0] - configs.RODWIDTH <= x <= rod[1][0] + configs.RODWIDTH:
             return i
@@ -178,12 +189,12 @@ def __reverse_ranks(ranks):
     """
     Load players ranks for the opposite team, so the counter always starts at the goalkeeper
     Parameters:
-        ranks(list): list with ranks for every players postions based on their position
+        ranks(np.array): list with ranks for every players postions based on their position
     Returns:
         reversed_ranks(list): list with ranks for every players postions based on their position
     """
     reversed_ranks = []
-
+    # reverse ranks to second team on match field, so both teams are starting at goal Keepers position
     for rank in ranks:
         place = (len(ranks) - 1) - rank
         reversed_ranks.append(place)
@@ -202,10 +213,8 @@ def define_balls_position(hsv_img, game_config, game_flags):
         current_ball_position(list): current position of the ball
     """
     _predicted = (0, 0)
-    center_x = 0
-    center_y = 0
     ball_color = game_config["ball_color"]
-
+    # read colors
     lower_color = np.asarray(ball_color)
     upper_color = np.asarray(ball_color)
     lower_color = lower_color - [10, 50, 50]
@@ -218,12 +227,15 @@ def define_balls_position(hsv_img, game_config, game_flags):
     lower_color = np.array(lower_color)
     upper_color = np.array(upper_color)
 
-    # blurring image to prevent false object detection
+    # blurring image to smooth out objects
     hsv_img = cv2.GaussianBlur(hsv_img, (3, 3), cv2.BORDER_DEFAULT)
 
+    # create mask on frame based on the upper and lower border from calibrated colors
     mask = cv2.inRange(hsv_img, lower_color, upper_color)
+    # find objects on calibrated mask
     ball_mask = _smooth_mask(mask)
 
+    # tracking object on map
     objects = _find_objects(ball_mask, -1, game_config)
     objects.flatten()
 
