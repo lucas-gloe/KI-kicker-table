@@ -24,13 +24,20 @@ def calibrate(calibration_image, game_config):
         game_config(dict): calibration values for current game
     Returns:
     """
+    # read angle of soccer table rotation from the outer edges of the table
     angle = get_angle(calibration_image)
+    # read center point and ratio from middle circle of match field
     center, ratio_pxcm = get_center_scale(calibration_image)
+    # read total table field
     field = calc_field(angle, center, ratio_pxcm)
+    # read color from tracked objects
     ball_color, team1_color, team2_color = calibrate_color(calibration_image, center)
+    # read match field and other game properties from total table field
     match_field, goal1, goal2, throw_in_zone, players_rods = load_game_field_properties(field)
+    # convert tracked hsv colors to rgb colors on gui
     gui_ball_color, gui_team1_color, gui_team2_color = convert_tracked_hsv_colors(ball_color, team1_color, team2_color)
 
+    # update all calibrated values to shared dict
     game_config.update({
         'goal1': goal1,
         'goal2': goal2,
@@ -59,13 +66,15 @@ def get_angle(calibration_image):
     Returns:
         angle(int): angle of foosball table rotation
     """
+    # convert color schema of calibration image
     rgb = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     angle = 0
     count = 0
-
+    # convert color schema of calibration image
     gray = cv2.cvtColor(cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR), cv2.COLOR_BGR2GRAY)
+    # convert display type of image by certain filter
     edges = cv2.Canny(gray, 50, 150, apertureSize=3)
-
+    # count outer edges of table
     lines = cv2.HoughLines(edges, 1, np.pi / 180, 110)
 
     if lines.shape[0]:
@@ -73,6 +82,7 @@ def get_angle(calibration_image):
     else:
         raise Exception('field not detected')
 
+    # check angle of rotation of outer edges
     for x in range(line_count):
 
         for rho, theta in lines[x]:
@@ -112,8 +122,10 @@ def get_center_scale(calibration_image):
         center(int): center point from foosball table
         ratio_pxcm(float): ratio of px to cm
     """
+    # convert color schema of calibration image
     gray = cv2.cvtColor(calibration_image, cv2.COLOR_HSV2BGR)
     gray = cv2.cvtColor(gray, cv2.COLOR_BGR2GRAY)
+    # check for middle circle with a certain size based on the scale factor from configs
     if configs.SCALE_FACTOR >= 0.4:
         gray = cv2.GaussianBlur(gray, (5, 5), 1)
         circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 100, param1=50, param2=30, minRadius=30, maxRadius=100)
@@ -123,6 +135,7 @@ def get_center_scale(calibration_image):
                                    maxRadius=int(100 * configs.SCALE_FACTOR))
     center_circle = (0, 0, 0)  # centerx, centery, radius
     min_dist = 0xFFFFFFFFFFF
+    # check all found circle for that one that is in the middle of the field the most
     for circle in circles[0]:
         dist_x = abs(circle[0] - calibration_image.shape[1] / 2)
         dist_y = abs(circle[1] - calibration_image.shape[0] / 2)
@@ -136,10 +149,12 @@ def get_center_scale(calibration_image):
         center_circle[1] = calibration_image.shape[0] / 2
         center_circle[2] = (114 * configs.SCALE_FACTOR)
 
+    # create another calibration with the found center circle
     cv2.circle(gray, (int(center_circle[0]), int(center_circle[1])), int(center_circle[2]), (0, 255, 0), 2)
 
     cv2.imwrite("gray.JPG", gray)
 
+    #calculate the ratio
     center = int(center_circle[0]), int(center_circle[1])
     radius = center_circle[2]
     ratio_pxcm = radius / 9.4
@@ -153,7 +168,7 @@ def calc_field(angle, center, ratio_pxcm):
     part of code from source: https://github.com/StudentCV/TableSoccerCV
     Parameters:
         angle(int): angle of foosball table rotation
-        center(int): center point from foosball table
+        center(list): list with x and y of center point from foosball table
         ratio_pxcm(float): ratio of px to cm
     Returns:
         field(list): contains all 4 corners from calibrated field with the following sequence: top left, top right, bottom left, bottom right
@@ -172,6 +187,7 @@ def calc_field(angle, center, ratio_pxcm):
         3: ["-", "-", "-", "+"]
     }
 
+    # save every corner of table field to render lines between all of the corners. these lines a form the field
     for corner in range(4):
         x = eval(str(center[0]) + corners[corner][0] + str(half_field_width * ratio_pxcm) + corners[corner][1] + str(
             np.tan(angle_radial_scale) * (half_field_height * ratio_pxcm)))
@@ -191,7 +207,7 @@ def calibrate_color(calibration_image, center):
     source: https://github.com/StudentCV/TableSoccerCV
     Parameters:
         calibration_image(np.ndarray): calibration image taken from the foosball
-        center(int): center point from foosball table
+        center(list): list with x and y of center point from foosball table
     Returns:
         ball_color(tuple): calibrated ball color
         team1_color(tuple): calibrated team 1 color
@@ -206,10 +222,13 @@ def calibrate_color(calibration_image, center):
     y1 = int(round(center[1] - (calibration_image.shape[0] / 10), 0))
     y2 = int(round(center[1] + (calibration_image.shape[0] / 10), 0))
 
+    # crop the calibration image by given values
     cropped_hsv_img = calibration_image[y1:y2, x1:x2]
 
+    # save the area around the middle circle
     cv2.imwrite("cropped_calibration_img.JPG", cropped_hsv_img)
 
+    # calibrate colors based on the cropped image
     ball_color = _calibrate_ball_color(cropped_hsv_img)
     team1_color = _calibrate_team_color(cropped_hsv_img, 1)
     team2_color = _calibrate_team_color(cropped_hsv_img, 2)
@@ -242,6 +261,7 @@ def _calibrate_ball_color(cropped_hsv_img):
     lower_border = tuple(lower_border_arr.tolist())
     upper_border = tuple(upper_border_arr.tolist())
 
+    # Create a mask for the areas with a color similar to the center pixel
     mask = cv2.inRange(cropped_hsv_img, lower_border, upper_border)
 
     # Average the color values of the masked area
@@ -284,13 +304,13 @@ def _calibrate_team_color(cropped_hsv_img, team_number):
     lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
     upper_border_arr = [np.max(colors[:, :, 0]), np.max(colors[:, :, 1]), np.max(colors[:, :, 2])]
 
-    # Create a mask for the areas with a color similar to the center pixel
     lower_border_arr = np.array(lower_border_arr)
     upper_border_arr = np.array(upper_border_arr)
 
     lower_border = tuple(lower_border_arr.tolist())
     upper_border = tuple(upper_border_arr.tolist())
 
+    # Create a mask for the areas with a color similar to the center pixel
     mask = cv2.inRange(cropped_hsv_img, lower_border, upper_border)
 
     # Average the color values of the masked area
@@ -325,7 +345,7 @@ def load_game_field_properties(field):
     match_field = np.array([[int(field[0][0]), int(field[0][1])],
                             [int(field[2][0]), int(field[2][1])]])
 
-    # calculate goals
+    # calculate goal zones
     goal_middle_y = int((match_field[1][1] - match_field[0][1]) / 2) + match_field[0][1]
 
     goal1 = np.array([[int(match_field[0][0]), goal_middle_y - int(configs.HALF_WIDTH_GOAL * configs.SCALE_FACTOR)],
@@ -370,14 +390,17 @@ def convert_tracked_hsv_colors(ball_color, team1_color, team2_color):
         team1_color(string): calibrated team 1 color in RGB
         team2_color(string): calibrated team 2 color in RGB
     """
+    # read calibrated colors
     _tracked_ball_color_hsv = np.uint8([[ball_color]])
     _tracked_team1_color_hsv = np.uint8([[team1_color]])
     _tracked_team2_color_hsv = np.uint8([[team2_color]])
 
+    # convert color into right color type
     _tracked_ball_color_rgb = cv2.cvtColor(_tracked_ball_color_hsv, cv2.COLOR_HSV2RGB)
     _tracked_team1_color_rgb = cv2.cvtColor(_tracked_team1_color_hsv, cv2.COLOR_HSV2RGB)
     _tracked_team2_color_rgb = cv2.cvtColor(_tracked_team2_color_hsv, cv2.COLOR_HSV2RGB)
 
+    # convert color into readable values for gui
     gui_ball_color = _rgb2hex(_tracked_ball_color_rgb)
     gui_team1_color = _rgb2hex(_tracked_team1_color_rgb)
     gui_team2_color = _rgb2hex(_tracked_team2_color_rgb)
@@ -407,15 +430,15 @@ def initialize_gui_layout(FONT):
     # layout of the GUI
     sg.theme('Reddit')
 
-    ################# Game frame #######################################
+    ################# whole Game frame #######################################
 
     game_frame = [
 
         [sg.Image(filename="", key="-frame-")]
     ]
-    ################# left frame with basic game infos #################
+    ################# right frame with basic game infos #################
 
-    # inner frame 1
+    # part from upper right frame, scoring, ball speed, fps,
 
     game_score_and_speed = [
         [sg.Text('SIT Smart Kicker', text_color='orange', font=(FONT, 30))],
@@ -434,7 +457,7 @@ def initialize_gui_layout(FONT):
         [sg.Text('Drücke S, um das Konfigurationsbild zu speichern', key='-config_img-', font=(FONT, 10))]
     ]
 
-    # inner frame 2
+    # part from upper right frame, team colors
 
     game_configuration = [
         [sg.Text("Spielkonfiguration", text_color='orange', font=(FONT, 15))],
@@ -446,6 +469,8 @@ def initialize_gui_layout(FONT):
                  expand_x=True, justification='c')]
     ]
 
+    # part from upper right frame, game history
+
     last_games = [
         [sg.Text("Letzte Spiele", text_color='orange', font=(FONT, 15))],
         [sg.Text("", key='-last_game_team1-', font=(FONT, 10)), sg.Text(" : ", font=(FONT, 10)),
@@ -456,23 +481,12 @@ def initialize_gui_layout(FONT):
          sg.Text("", key='-third_last_game_team2-', font=(FONT, 10))]
     ]
 
+    # whole upper right
+
     configurations = [
         [sg.Frame("", game_configuration, expand_x=True, expand_y=True, element_justification='c'),
          sg.Frame("", last_games, expand_x=True, expand_y=True, element_justification='c')]
     ]
-
-    # inner frame 3
-
-    key_bindings = [
-        [sg.Text("Tastenbelegungen", text_color='orange', font=(FONT, 15))],
-        [sg.Text('Drücke N, um ein neues Spiel zu starten', font=(FONT, 10))],
-        [sg.Text("Drücke C, um Kicker anzuzeigen, F um auszublenden", font=(FONT, 10))],
-        [sg.Text("Drücke A, um Konturen anzuzeigen, D zum auszublenden", font=(FONT, 10))],
-        [sg.Text("Drücke M, um in den manuellen Modus zu wechseln, l für Automatik", font=(FONT, 10))],
-        [sg.Text("Drücke K, um die Frames zu durchlaufen", font=(FONT, 10))]
-    ]
-
-    # left frame
 
     basic_information = [
         [sg.Frame("", game_score_and_speed, expand_x=True, expand_y=True, element_justification='c')],
@@ -483,21 +497,38 @@ def initialize_gui_layout(FONT):
         [sg.Frame("", layout=basic_information, border_width=0, expand_x=True, expand_y=True)]
     ]
 
-    ################# right frame with advanced infos #################
+    ################# down frame with advanced infos #################
 
-    # frame pattern
+    # part from bottom frame, key bindings
+
+    key_bindings = [
+        [sg.Text("Tastenbelegungen", text_color='orange', font=(FONT, 15))],
+        [sg.Text('Drücke N, um ein neues Spiel zu starten', font=(FONT, 10))],
+        [sg.Text("Drücke C, um Kicker anzuzeigen, F um auszublenden", font=(FONT, 10))],
+        [sg.Text("Drücke A, um Konturen anzuzeigen, D zum auszublenden", font=(FONT, 10))],
+        [sg.Text("Drücke M, um in den manuellen Modus zu wechseln, l für Automatik", font=(FONT, 10))],
+        [sg.Text("Drücke K, um die Frames zu durchlaufen", font=(FONT, 10))]
+    ]
+
+    # part from bottom frame, heat_map
 
     heat_map = [
         [sg.Text("Platzhalter", text_color='orange', font=(FONT, 15))]
     ]
 
+    # part from bottom frame
+
     blank_frame = [
         [sg.Text("Platzhalter", text_color='orange', font=(FONT, 15))]
     ]
 
+    # part from bottom frame
+
     blank_frame2 = [
         [sg.Text("Platzhalter", text_color='orange', font=(FONT, 15))]
     ]
+
+    # whole bottom frame
 
     deep_information = [
         [sg.Frame("", key_bindings, expand_x=True, expand_y=True, element_justification='c'),
@@ -505,8 +536,6 @@ def initialize_gui_layout(FONT):
          sg.Frame("", blank_frame, expand_x=True, expand_y=True, element_justification='c'),
          sg.Frame("", blank_frame2, expand_x=True, expand_y=True, element_justification='c')]
     ]
-
-    # right frame
 
     game_analysis = [
         [sg.Frame("", layout=deep_information, border_width=0, expand_x=True, expand_y=True)]

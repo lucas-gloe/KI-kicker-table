@@ -5,7 +5,7 @@ import os.path
 import configs
 
 
-def draw_field_calibrations(frame, game_config):
+def _render_field_calibrations(frame, game_config):
     """
     show foosball field contour for calibration on frame
     Parameters:
@@ -42,7 +42,7 @@ def draw_field_calibrations(frame, game_config):
     return frame
 
 
-def _draw_ball(frame, results):
+def _render_ball(frame, results):
     """
     draw a circle at the balls position and name the Object "ball"
     Parameters:
@@ -51,16 +51,17 @@ def _draw_ball(frame, results):
     Returns:
         frame(np.ndarray):frame with renderings
     """
-    # draw a circle for the ball
+    # draw a circle for the balls position
     if results['ball_position'] != [-1, -1]:
         cv2.circle(frame, (results['ball_position'][0], results['ball_position'][1]), int(16 * configs.SCALE_FACTOR),
                    (0, 255, 0), 2)
+        # render name from ball
         cv2.putText(frame, "Ball", (results['ball_position'][0], results['ball_position'][1]),
                     cv2.FONT_HERSHEY_PLAIN, 1, (30, 144, 255), 2)
     return frame
 
 
-def _draw_predicted_ball(frame, results):
+def _render_predicted_ball(frame, results):
     """
     draw a circle at the predicted balls position if there is no ball
     detected in the frame and name the Object "ball"
@@ -70,13 +71,14 @@ def _draw_predicted_ball(frame, results):
     Returns:
         frame(np.ndarray):frame with renderings
     """
+    # draw a circle on the predicted position without the name
     if results["ball_position"] == [-1, -1]:
         cv2.circle(frame, (results["predicted"][0], results["predicted"][1]), int(16 * configs.SCALE_FACTOR),
                    (0, 255, 255), 2)
     return frame
 
 
-def _draw_figures(frame, results, team_dict_number, team_dict_name, team_number, team_ranks):
+def _render_figures(frame, results, team_dict_number, team_dict_name, team_number, team_ranks):
     """
     Draw a rectangle at the players position and name it TeamX
     Parameters:
@@ -91,9 +93,11 @@ def _draw_figures(frame, results, team_dict_number, team_dict_name, team_number,
     """
     if results[team_dict_name]:
         for i, player_position in enumerate(results[team_dict_number]):
+            # render position
             cv2.rectangle(frame, (int(player_position[0][0]), int(player_position[0][1])),
                           (int(player_position[1][0]), int(player_position[1][1])),
                           (0, 255, 0), 2)
+            # render name
             cv2.putText(frame,
                         ("Team" + str(team_number) + ", " + str(results[team_ranks][i])),
                         (int(player_position[0][0]), int(player_position[0][1])), cv2.FONT_HERSHEY_PLAIN, 1,
@@ -101,9 +105,9 @@ def _draw_figures(frame, results, team_dict_number, team_dict_name, team_number,
     return frame
 
 
-def draw_calibration_marker(frame):
+def _render_calibration_marker(frame):
     """
-    Drawing 3 circles as visible calibration markes for the user
+    Drawing 3 circles as visible calibration markes in the middle of the frame for teams and ball calibration
     Parameters:
         frame(np.ndarray):frame from interpretations
     Returns:
@@ -130,16 +134,16 @@ def render_game(frame, results, game_config, game_flags):
         frame(np.ndarray):frame with renderings
     """
     if results is None:
-        return draw_calibration_marker(frame)
+        return _render_calibration_marker(frame)
     else:
         if game_flags['show_kicker']:
-            frame = draw_field_calibrations(frame, game_config)
+            frame = _render_field_calibrations(frame, game_config)
         if game_flags['show_objects']:
-            frame = _draw_ball(frame, results)
-            frame = _draw_predicted_ball(frame, results)
-            frame = _draw_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
+            frame = _render_ball(frame, results)
+            frame = _render_predicted_ball(frame, results)
+            frame = _render_figures(frame, results, 'team1_positions', 'team1_on_field', 1,
                                                  'ranks_team1')
-            frame = _draw_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
+            frame = _render_figures(frame, results, 'team2_positions', 'team2_on_field', 2,
                                                  'ranks_team2')
         return frame
 
@@ -162,6 +166,7 @@ def check_variables(user_input, game_flags):
         'l': ('manual_mode', False),
         'k': ('one_iteration', True)
     }
+    # loop over keybindings
     for key, (flag, value) in variables.items():
         if keyboard.is_pressed(key):
             user_input.value = ord(key)
@@ -170,6 +175,14 @@ def check_variables(user_input, game_flags):
 
 
 def check_gui_events(event, current_game_results):
+    """
+    check if a button on the gui was pressed
+    Parameters:
+        event(str): button press on gui
+        current_game_results(dict): time related interpretation results for each game
+    Returns:
+    """
+    # check goal counter buttons
     if event in ["-manual_game_counter_team_1_up-", "-manual_game_counter_team_2_up-"]:
         if event == "-manual_game_counter_team_1_up-":
             team = "counter_team1"
@@ -186,13 +199,12 @@ def check_gui_events(event, current_game_results):
             current_game_results[team] -= 1
 
 
-def update_gui(window, game_config, event, total_game_results, current_game_results, current_result, render_results, expect_id):
+def update_gui(window, game_config, total_game_results, current_game_results, current_result, render_results, expect_id):
     """
     update values on gui window
     Parameters:
         window(obj): gui window object
         game_config(dict): calibration values for current game
-        event(obj): manual event on gui window
         total_game_results(list): time related total game results per game
         current_game_results(dict): time related interpretation results for each game
         current_result(dict): frame results after interpretation
@@ -222,7 +234,5 @@ def update_gui(window, game_config, event, total_game_results, current_game_resu
 
     if os.path.exists("calibration_image.JPG"):
         window["-config_img-"].update("Konfigurationsbild gespeichert!")
-
-    check_gui_events(event, current_game_results)
 
     return window
