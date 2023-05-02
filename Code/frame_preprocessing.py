@@ -271,7 +271,8 @@ def define_balls_position(hsv_img, game_config, game_flags):
 def _smooth_mask(mask):
     """
     The mask created inDetectBallPosition might be noisy.
-    source: https://www.computervision.zone/courses/learn-opencv-in-3-hours/
+    source: https://github.com/StudentCV/TableSoccerCV/blob/master/BallTracker.py
+    last visited: 02.05.2023
     Parameters:
         mask(np.ndarray): black-white image of the filtered positions of the objects
     Returns:

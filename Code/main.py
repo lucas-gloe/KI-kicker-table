@@ -99,6 +99,7 @@ def update_game(preprocessed_queue, result_queue, user_input, game_config, ball_
         ball_positions(list): time related ball positions
         game_flags(dict): flag values for current game
         current_game_results(dict): time related interpretation results for each game
+    Returns:
     """
     # get start time
     start_time = None
@@ -320,7 +321,7 @@ if __name__ == '__main__':
                     else:
                         print("start calibration")
                         calibration_image = cv2.imread(r"./calibration_image.JPG")
-                        # calibrate game properties if a calibration image exist
+                        # calibrate game properties if a calibration image exists
                         calibration.calibrate(calibration_image, game_config)
                         print("finished calibration")
                         calibrated = True
@@ -358,7 +359,7 @@ if __name__ == '__main__':
                 else:
                     print("start calibration")
                     calibration_image = cv2.imread(r"./calibration_image.JPG")
-                    # calibrate game properties if a calibration image exist
+                    # calibrate game properties if a calibration image exists
                     calibration.calibrate(calibration_image, game_config)
                     print("finished calibration")
                     calibrated = True
