@@ -115,7 +115,8 @@ def predict_ball(ball_positions, current_game_results):
 class KalmanFilter:
     """
     Load the kalman filter for prediction purposes and use it to predict the next position of the ball
-    Source: VisualComputer, https://www.youtube.com/watch?v=67jwpv49ymA
+    source: VisualComputer, https://www.youtube.com/watch?v=67jwpv49ymA
+    last visited: 02.05.2023
     """
     kf = cv2.KalmanFilter(4, 2)
     kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)

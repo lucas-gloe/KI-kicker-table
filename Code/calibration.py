@@ -60,7 +60,8 @@ def calibrate(calibration_image, game_config):
 def get_angle(calibration_image):
 	"""
 	define angle of table soccer for playground definition
-	source: https://github.com/StudentCV/TableSoccerCV
+	source: https://github.com/StudentCV/TableSoccerCV/blob/master/FieldDetecter.py
+	last visited: 02.05.2023
 	Parameters:
 		calibration_image(np.ndarray): calibration image taken from the foosball
 	Returns:
@@ -115,7 +116,8 @@ def get_angle(calibration_image):
 def get_center_scale(calibration_image):
 	"""
 	read the center circle of table soccer and compare center size to given camera resolution
-	source: https://github.com/StudentCV/TableSoccerCV
+	source: https://github.com/StudentCV/TableSoccerCV/blob/master/FieldDetecter.py
+	last visited: 02.05.2023
 	Parameters:
 		calibration_image(np.ndarray): calibration image taken from the foosball
 	Returns:
@@ -165,7 +167,8 @@ def get_center_scale(calibration_image):
 def calc_field(angle, center, ratio_pxcm):
 	"""
 	take calculate arguments to create table soccer playground
-	part of code from source: https://github.com/StudentCV/TableSoccerCV
+	part of code from source: https://github.com/StudentCV/TableSoccerCV/blob/master/FieldDetecter.py
+	last visited: 02.05.2023
 	Parameters:
 		angle(int): angle of foosball table rotation
 		center(list): list with x and y of center point from foosball table
@@ -204,7 +207,8 @@ def calc_field(angle, center, ratio_pxcm):
 def calibrate_color(calibration_image, center):
 	"""
 	The taken image will be used to read the colors from the defined calibration positions.
-	source: https://github.com/StudentCV/TableSoccerCV
+	part of code from source: https://github.com/StudentCV/TableSoccerCV/blob/master/BallTracker.py
+	last visited: 02.05.2023
 	Parameters:
 		calibration_image(np.ndarray): calibration image taken from the foosball
 		center(list): list with x and y of center point from foosball table
@@ -239,7 +243,8 @@ def calibrate_color(calibration_image, center):
 def _calibrate_ball_color(cropped_hsv_img):
 	"""
 	Measures the color around the balls position.
-	part of code from source: https://github.com/StudentCV/TableSoccerCV
+	part of code from source: https://github.com/StudentCV/TableSoccerCV/blob/master/BallTracker.py
+	last visited: 02.05.2023
 	Parameters:
 		cropped_hsv_img(np.ndarray): cropped calibration image taken from calibration image
 	Returns:
@@ -279,7 +284,8 @@ def _calibrate_ball_color(cropped_hsv_img):
 def _calibrate_team_color(cropped_hsv_img, team_number):
 	"""
 	Measures the color around the teams positions
-	part of code from source: https://github.com/StudentCV/TableSoccerCV
+	part of code from source: https://github.com/StudentCV/TableSoccerCV/blob/master/TableSoccer.py
+	last visited: 02.05.2023
 	Parameters:
 		cropped_hsv_img(np.ndarray): cropped calibration image taken from calibration image
 		team_number(int): number for team for defining calibration area
@@ -298,7 +304,7 @@ def _calibrate_team_color(cropped_hsv_img, team_number):
 		x_player = x_center - int(85 * configs.SCALE_FACTOR)
 		y_player = y_center
 
-	# Get the color of the pixel in the image center
+	# Get the color of the pixel around the image center
 	colors = cropped_hsv_img[y_player - int(6 * configs.SCALE_FACTOR):y_player + int(5 * configs.SCALE_FACTOR),
 				x_player - int(6 * configs.SCALE_FACTOR):x_player + int(5 * configs.SCALE_FACTOR)]
 	lower_border_arr = [np.min(colors[:, :, 0]), np.min(colors[:, :, 1]), np.min(colors[:, :, 2])]
